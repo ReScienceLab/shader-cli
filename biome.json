@@ -196,10 +196,10 @@
     },
     {
       "includes": [
-        "app/**/*.tsx",
-        "app/**/*.ts",
-        "app/**/*.jsx",
-        "app/**/*.js"
+        "src/app/**/*.tsx",
+        "src/app/**/*.ts",
+        "src/app/**/*.jsx",
+        "src/app/**/*.js"
       ],
       "linter": {
         "rules": {
@@ -226,7 +226,7 @@
       }
     },
     {
-      "includes": ["lib/styles/css/root.css"],
+      "includes": ["src/shared/styles/css/root.css"],
       "linter": {
         "rules": {
           "suspicious": {

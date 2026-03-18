@@ -1,0 +1,5 @@
+@import "../shared/styles/css/reset.css";
+@import "tailwindcss/utilities.css";
+@import "../shared/styles/css/tailwind.css";
+@import "../shared/styles/css/root.css";
+@import "../shared/styles/css/global.css";

@@ -115,19 +115,8 @@ const nextConfig: NextConfig = {
       ],
     },
   ],
-  redirects: async () => [
-    {
-      source: "/home",
-      destination: "/",
-      permanent: true,
-    },
-  ],
-  rewrites: async () => [
-    {
-      source: "/",
-      destination: "/home",
-    },
-  ],
+  redirects: async () => [],
+  rewrites: async () => [],
 }
 
 const bundleAnalyzerPlugin = withBundleAnalyzer({
