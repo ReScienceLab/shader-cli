@@ -17,18 +17,23 @@ html.overflow-hidden {
 body {
   min-height: 100vh;
   overscroll-behavior: none;
-  background-color: var(--color-primary);
-  color: var(--color-secondary);
+  background:
+    radial-gradient(circle at top, rgb(255 255 255 / 0.05), transparent 38%),
+    var(--ds-color-canvas);
+  color: var(--ds-color-text-primary);
   display: flex;
   flex-direction: column;
+  font-family: var(--ds-font-sans);
+  isolation: isolate;
+  position: relative;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 /* Selection styling */
 *::selection {
-  background-color: var(--color-contrast);
-  color: var(--color-primary);
+  background-color: var(--ds-color-surface-active);
+  color: var(--ds-color-text-primary);
 }
 
 /* SVG icon colors */
@@ -56,7 +61,8 @@ svg.icon {
 
 /* Focus states */
 *:focus-visible {
-  outline: 2px solid var(--color-contrast);
+  outline: 1px solid var(--ds-border-active);
+  outline-offset: 2px;
 }
 
 html.scrollbar-grabbing,
@@ -74,6 +80,7 @@ button {
   /* Fix vertical text centering by trimming font metric space */
   text-box-trim: both;
   text-box-edge: cap alphabetic;
+  font-family: inherit;
   user-select: none;
 }
 

@@ -16,6 +16,7 @@ import "@/app/globals.css"
 
 const geist = Geist({
   subsets: ["latin"],
+  variable: "--geist-sans",
 })
 
 export const metadata: Metadata = {
@@ -81,7 +82,7 @@ export default function RootLayout({ children }: PropsWithChildren) {
     <html
       lang="en"
       dir="ltr"
-      className={cn(fontsVariable, geist.className)}
+      className={cn(fontsVariable, geist.variable, geist.className)}
       suppressHydrationWarning
     >
       <body>

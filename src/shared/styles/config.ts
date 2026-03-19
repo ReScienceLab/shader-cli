@@ -1,12 +1,14 @@
 import { colors, palettes, themeNames, themes } from "./colors"
 import { easings } from "./easings"
 import { breakpoints, customSizes, layout, screens } from "./layout.mjs"
+import { designTokens } from "./tokens"
 import { fonts, typography } from "./typography"
 
 const config = {
   breakpoints,
   colors,
   customSizes,
+  designTokens,
   easings,
   fonts,
   layout,
@@ -21,6 +23,7 @@ export {
   breakpoints,
   colors,
   customSizes,
+  designTokens,
   easings,
   fonts,
   layout,

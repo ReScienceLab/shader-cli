@@ -5,12 +5,19 @@ export function generateRoot({
   breakpoints,
   colors,
   customSizes,
+  designTokens,
   easings,
   layout,
   screens,
 }: Pick<
   Config,
-  "breakpoints" | "colors" | "customSizes" | "easings" | "layout" | "screens"
+  | "breakpoints"
+  | "colors"
+  | "customSizes"
+  | "designTokens"
+  | "easings"
+  | "layout"
+  | "screens"
 >) {
   return `@custom-media --hover (hover: hover) and (pointer: fine);
 @custom-media --reduced-motion (prefers-reduced-motion: reduce);
@@ -39,6 +46,7 @@ ${formatObject(
 	${formatObject(easings, ([name, value]) => `--ease-${name}: ${value};`)}
 
 	${formatObject(colors, ([name, value]) => `--color-${name}: ${value};`)}
+	${formatObject(designTokens, ([name, value]) => `--${name}: ${value};`)}
 
 	@variant desktop {
     --device-width: ${screens.desktop.width};
