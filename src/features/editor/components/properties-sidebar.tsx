@@ -103,7 +103,7 @@ export function PropertiesSidebar() {
             </Typography>
             <Typography variant="body">Select a layer to edit it.</Typography>
             <Typography tone="muted" variant="caption">
-              The panel will show shared controls plus layer-specific parameters.
+              Nothing to edit yet. Create a new layer in the left panel.
             </Typography>
           </div>
         </GlassPanel>
@@ -112,6 +112,8 @@ export function PropertiesSidebar() {
   }
 
   const definition = getLayerDefinition(selectedLayer.type)
+  const visibleParams =
+    selectedLayer.type === "image" ? [] : definition.params
 
   return (
     <aside className={s.root}>
@@ -200,23 +202,25 @@ export function PropertiesSidebar() {
             </div>
           </section>
 
-          <section className={s.section}>
-            <Typography className={s.sectionTitle} tone="secondary" variant="overline">
-              {definition.defaultName}
-            </Typography>
+          {visibleParams.length > 0 ? (
+            <section className={s.section}>
+              <Typography className={s.sectionTitle} tone="secondary" variant="overline">
+                {definition.defaultName}
+              </Typography>
 
-            <div className={s.fieldStack}>
-              {definition.params.map((param) => (
-                <ParameterField
-                  definition={param}
-                  key={param.key}
-                  layerId={selectedLayer.id}
-                  onChange={updateLayerParam}
-                  value={selectedLayer.params[param.key] ?? param.defaultValue}
-                />
-              ))}
-            </div>
-          </section>
+              <div className={s.fieldStack}>
+                {visibleParams.map((param) => (
+                  <ParameterField
+                    definition={param}
+                    key={param.key}
+                    layerId={selectedLayer.id}
+                    onChange={updateLayerParam}
+                    value={selectedLayer.params[param.key] ?? param.defaultValue}
+                  />
+                ))}
+              </div>
+            </section>
+          ) : null}
         </div>
       </GlassPanel>
     </aside>

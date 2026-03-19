@@ -6,6 +6,7 @@ import s from "./icon-button.module.css"
 const iconButtonVariants = cva(s.iconButton, {
   variants: {
     variant: {
+      ghost: s.ghost,
       default: s.default,
       hover: s.hover,
       active: s.active,

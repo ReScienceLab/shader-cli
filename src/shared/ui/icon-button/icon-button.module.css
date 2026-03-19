@@ -40,6 +40,17 @@
   color: var(--ds-color-text-secondary);
 }
 
+.ghost {
+  background-color: transparent;
+  color: var(--ds-color-text-tertiary);
+}
+
+.ghost:hover {
+  background-color: transparent;
+  color: var(--ds-color-text-primary);
+  box-shadow: none;
+}
+
 .hover {
   background-color: var(--ds-color-surface-active);
   color: var(--ds-color-text-secondary);

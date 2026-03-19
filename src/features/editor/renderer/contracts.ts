@@ -6,6 +6,7 @@ import type {
   TimelineStateSnapshot,
 } from "@/features/editor/types"
 import { evaluateTimelineForLayers } from "@/features/editor/timeline/evaluate"
+import { createProjectClock } from "@/features/editor/renderer/project-clock"
 import { cloneParameterValues } from "@/features/editor/utils/parameter-schema"
 
 export interface ProjectClock {
@@ -93,13 +94,7 @@ export function buildRendererFrame(input: BuildRendererFrameInput): RendererFram
     .filter((entry) => entry.layer.visible)
 
   return {
-    clock: {
-      delta: input.delta,
-      duration: input.timeline.duration,
-      isPlaying: input.timeline.isPlaying,
-      loop: input.timeline.loop,
-      time: input.timeline.currentTime,
-    },
+    clock: createProjectClock(input.timeline, input.delta),
     layers,
     outputSize: input.outputSize,
     pixelRatio: input.pixelRatio,

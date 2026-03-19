@@ -1,7 +1,8 @@
 "use client"
 
 import {
-  DotsSixVertical,
+  DotsSixVerticalIcon,
+  DotsThreeVerticalIcon,
   Eye,
   EyeSlash,
   ImageSquare,
@@ -20,6 +21,7 @@ import { useLayerStore } from "@/store/layerStore"
 import s from "./layer-sidebar.module.css"
 
 type AddLayerAction = "dithering" | "image"
+type LayerAction = "delete" | "reset"
 
 const addLayerOptions = [
   {
@@ -65,6 +67,7 @@ function getThumbnailClassName(layer: EditorLayer, asset: EditorAsset | null): s
 export function LayerSidebar() {
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const [addLayerSelectKey, setAddLayerSelectKey] = useState(0)
+  const [layerActionSelectKeys, setLayerActionSelectKeys] = useState<Record<string, number>>({})
   const [draggingLayerId, setDraggingLayerId] = useState<string | null>(null)
   const [dropLayerId, setDropLayerId] = useState<string | null>(null)
 
@@ -72,6 +75,8 @@ export function LayerSidebar() {
   const selectedLayerId = useLayerStore((state) => state.selectedLayerId)
   const addLayer = useLayerStore((state) => state.addLayer)
   const reorderLayers = useLayerStore((state) => state.reorderLayers)
+  const removeLayer = useLayerStore((state) => state.removeLayer)
+  const resetLayerParams = useLayerStore((state) => state.resetLayerParams)
   const selectLayer = useLayerStore((state) => state.selectLayer)
   const setLayerAsset = useLayerStore((state) => state.setLayerAsset)
   const setLayerVisibility = useLayerStore((state) => state.setLayerVisibility)
@@ -109,6 +114,19 @@ export function LayerSidebar() {
     }
 
     setAddLayerSelectKey((current) => current + 1)
+  }
+
+  function handleLayerAction(layerId: string, action: LayerAction) {
+    if (action === "delete") {
+      removeLayer(layerId)
+    } else {
+      resetLayerParams(layerId)
+    }
+
+    setLayerActionSelectKeys((current) => ({
+      ...current,
+      [layerId]: (current[layerId] ?? 0) + 1,
+    }))
   }
 
   function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
@@ -173,6 +191,10 @@ export function LayerSidebar() {
             const isSelected = selectedLayerId === layer.id
             const isDragging = draggingLayerId === layer.id
             const isDropTarget = dropLayerId === layer.id && draggingLayerId !== layer.id
+            const layerActionOptions = [
+              { label: "Reset properties", value: "reset" },
+              { label: "Delete layer", value: "delete" },
+            ] as const satisfies readonly { label: ReactNode; value: LayerAction }[]
 
             return (
               <li
@@ -211,7 +233,7 @@ export function LayerSidebar() {
               >
                 <button className={s.rowButton} onClick={() => selectLayer(layer.id)} type="button">
                   <span className={cn(s.handle, layer.locked && s.handleLocked)}>
-                    <DotsSixVertical size={14} weight="bold" />
+                    <DotsSixVerticalIcon size={14} weight="bold" />
                   </span>
 
                   <div
@@ -233,13 +255,26 @@ export function LayerSidebar() {
                   </div>
                 </button>
 
+                <Select
+                  key={`${layer.id}:${layerActionSelectKeys[layer.id] ?? 0}`}
+                  className={s.rowActionSelect ?? ""}
+                  iconClassName={s.rowActionIcon ?? ""}
+                  onValueChange={(value) => handleLayerAction(layer.id, value as LayerAction)}
+                  options={layerActionOptions}
+                  placeholder={<DotsThreeVerticalIcon size={14} weight="bold" />}
+                  popupClassName={s.rowActionPopup ?? ""}
+                  triggerAriaLabel={`Layer actions for ${layer.name}`}
+                  triggerClassName={s.rowActionTrigger ?? ""}
+                  valueClassName={s.rowActionValue ?? ""}
+                />
+
                 <IconButton
                   aria-label={layer.visible ? "Hide layer" : "Show layer"}
                   onClick={(event) => {
                     event.stopPropagation()
                     setLayerVisibility(layer.id, !layer.visible)
                   }}
-                  variant={layer.visible ? "default" : "hover"}
+                  variant="ghost"
                 >
                   {layer.visible ? (
                     <Eye size={14} weight="regular" />

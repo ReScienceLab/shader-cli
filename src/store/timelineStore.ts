@@ -1,4 +1,5 @@
 import { create } from "zustand"
+import { advanceProjectTimeline } from "@/features/editor/renderer/project-clock"
 import type {
   AnimatedPropertyBinding,
   AnimatableValueType,
@@ -225,28 +226,11 @@ export const useTimelineStore = create<TimelineStore>((set, get) => ({
     }
 
     set((state) => {
-      if (!state.isPlaying) {
-        return state
-      }
-
-      const duration = Math.max(state.duration, MIN_DURATION)
-      const nextTime = state.currentTime + delta
-
-      if (state.loop) {
-        return {
-          currentTime: nextTime % duration,
-        }
-      }
-
-      if (nextTime >= duration) {
-        return {
-          currentTime: duration,
-          isPlaying: false,
-        }
-      }
+      const next = advanceProjectTimeline(state, delta)
 
       return {
-        currentTime: nextTime,
+        currentTime: next.currentTime,
+        isPlaying: next.isPlaying,
       }
     })
   },
