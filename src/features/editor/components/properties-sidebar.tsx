@@ -8,6 +8,7 @@ import type {
   ParameterValue,
   SelectParameterDefinition,
 } from "@/features/editor/types"
+import { ColorPicker } from "@/shared/ui/color-picker"
 import { GlassPanel } from "@/shared/ui/glass-panel"
 import { Select } from "@/shared/ui/select"
 import { Slider } from "@/shared/ui/slider"
@@ -286,21 +287,10 @@ function ParameterField({
           <Typography className={s.fieldLabel} tone="secondary" variant="label">
             {definition.label}
           </Typography>
-          <label className={s.colorField}>
-            <input
-              className={s.colorInput}
-              onChange={(event) => onChange(layerId, definition.key, event.target.value)}
-              type="color"
-              value={toColorValue(value)}
-            />
-            <input
-              className={s.colorValue}
-              onChange={(event) => onChange(layerId, definition.key, event.target.value)}
-              spellCheck={false}
-              type="text"
-              value={toColorValue(value)}
-            />
-          </label>
+          <ColorPicker
+            onValueChange={(nextValue) => onChange(layerId, definition.key, nextValue)}
+            value={toColorValue(value)}
+          />
         </div>
       )
 
