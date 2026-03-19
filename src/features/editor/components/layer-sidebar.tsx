@@ -20,7 +20,7 @@ import { useAssetStore } from "@/store/assetStore"
 import { useLayerStore } from "@/store/layerStore"
 import s from "./layer-sidebar.module.css"
 
-type AddLayerAction = "dithering" | "image"
+type AddLayerAction = "dithering" | "image" | "video"
 type LayerAction = "delete" | "reset"
 
 const addLayerOptions = [
@@ -32,6 +32,15 @@ const addLayerOptions = [
       </span>
     ),
     value: "image",
+  },
+  {
+    label: (
+      <span className={s.menuButton}>
+        <ImageSquare size={14} weight="regular" />
+        Video
+      </span>
+    ),
+    value: "video",
   },
   {
     label: (
@@ -65,7 +74,8 @@ function getThumbnailClassName(layer: EditorLayer, asset: EditorAsset | null): s
 }
 
 export function LayerSidebar() {
-  const fileInputRef = useRef<HTMLInputElement | null>(null)
+  const imageInputRef = useRef<HTMLInputElement | null>(null)
+  const videoInputRef = useRef<HTMLInputElement | null>(null)
   const [addLayerSelectKey, setAddLayerSelectKey] = useState(0)
   const [layerActionSelectKeys, setLayerActionSelectKeys] = useState<Record<string, number>>({})
   const [draggingLayerId, setDraggingLayerId] = useState<string | null>(null)
@@ -88,10 +98,10 @@ export function LayerSidebar() {
     [assets],
   )
 
-  async function handleImageFile(file: File) {
+  async function handleMediaFile(file: File, layerType: "image" | "video") {
     try {
       const asset = await loadAsset(file)
-      const layerId = addLayer("image")
+      const layerId = addLayer(layerType)
       setLayerAsset(layerId, asset.id)
     } catch {
       // No-op.
@@ -99,7 +109,11 @@ export function LayerSidebar() {
   }
 
   function handleImagePick() {
-    fileInputRef.current?.click()
+    imageInputRef.current?.click()
+  }
+
+  function handleVideoPick() {
+    videoInputRef.current?.click()
   }
 
   function handleAddDithering() {
@@ -109,6 +123,8 @@ export function LayerSidebar() {
   function handleAddLayer(action: AddLayerAction) {
     if (action === "image") {
       handleImagePick()
+    } else if (action === "video") {
+      handleVideoPick()
     } else {
       handleAddDithering()
     }
@@ -129,7 +145,7 @@ export function LayerSidebar() {
     }))
   }
 
-  function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
+  function handleImageChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0]
 
     event.currentTarget.value = ""
@@ -138,7 +154,19 @@ export function LayerSidebar() {
       return
     }
 
-    void handleImageFile(file)
+    void handleMediaFile(file, "image")
+  }
+
+  function handleVideoChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0]
+
+    event.currentTarget.value = ""
+
+    if (!file) {
+      return
+    }
+
+    void handleMediaFile(file, "video")
   }
 
   function commitReorder(targetLayerId: string) {
@@ -161,8 +189,15 @@ export function LayerSidebar() {
       <input
         accept="image/png,image/jpeg,image/webp,image/gif"
         className="hidden"
-        onChange={handleFileChange}
-        ref={fileInputRef}
+        onChange={handleImageChange}
+        ref={imageInputRef}
+        type="file"
+      />
+      <input
+        accept="video/mp4,video/webm"
+        className="hidden"
+        onChange={handleVideoChange}
+        ref={videoInputRef}
         type="file"
       />
 

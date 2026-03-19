@@ -91,8 +91,8 @@ export class MediaPass extends PassNode {
       this.videoHandle.video.playbackRate = Math.max(0.1, params.playbackRate)
     }
 
-    if (this.videoHandle && typeof params.loop === "boolean") {
-      this.videoHandle.video.loop = params.loop
+    if (this.videoHandle) {
+      this.videoHandle.video.loop = true
     }
   }
 

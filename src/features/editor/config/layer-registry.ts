@@ -43,12 +43,6 @@ const imageParams = [
 const videoParams = [
   ...imageParams,
   {
-    defaultValue: true,
-    key: "loop",
-    label: "Loop",
-    type: "boolean",
-  },
-  {
     defaultValue: 1,
     key: "playbackRate",
     label: "Playback Rate",
