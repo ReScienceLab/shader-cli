@@ -21,6 +21,7 @@ declare module "three/tsl" {
   export interface TSLNode {
     a: TSLNode
     b: TSLNode
+    dot(value: unknown): TSLNode
     g: TSLNode
     r: TSLNode
     rgb: TSLNode
@@ -56,6 +57,7 @@ declare module "three/tsl" {
     clamp(min?: unknown, max?: unknown): TSLNode
     div(value: unknown): TSLNode
     equal(value: unknown): TSLNode
+    fract(): TSLNode
     greaterThan(value: unknown): TSLNode
     greaterThanEqual(value: unknown): TSLNode
     lessThan(value: unknown): TSLNode
@@ -70,6 +72,7 @@ declare module "three/tsl" {
   }
 
   export const EPSILON: TSLNode
+  export const PI: TSLNode
   export function abs(value: unknown): TSLNode
   export function add(left: unknown, right: unknown): TSLNode
   export function clamp(value: unknown, min?: unknown, max?: unknown): TSLNode
@@ -81,6 +84,7 @@ declare module "three/tsl" {
     layout?: unknown,
   ): (...args: unknown[]) => TSLNode
   export function Loop(config: LoopConfig, callback: (...args: unknown[]) => unknown): TSLNode
+  export function exp(value: unknown): TSLNode
   export function fract(value: unknown): TSLNode
   export function float(value?: unknown): TSLNode
   export function floor(value: unknown): TSLNode
@@ -97,7 +101,9 @@ declare module "three/tsl" {
     whenFalse: unknown,
   ): TSLNode
   export function sin(value: unknown): TSLNode
+  export function smoothstep(edge0: unknown, edge1: unknown, x: unknown): TSLNode
   export function sqrt(value: unknown): TSLNode
+  export function pow(base: unknown, exponent: unknown): TSLNode
   export function step(edge: unknown, value: unknown): TSLNode
   export function sub(left: unknown, right: unknown): TSLNode
   export function texture(value: unknown, uv?: unknown): TSLNode
