@@ -5,6 +5,7 @@ import {
   clamp,
   float,
   positionLocal,
+  smoothstep,
   texture as tslTexture,
   type TSLNode,
   uniform,
@@ -29,7 +30,6 @@ export class ParticleGridPass extends PassNode {
   private readonly internalRT: THREE.WebGLRenderTarget
   private readonly blitInputNode: Node
 
-  // GPU texture node — updated each frame with input texture
   private inputSamplerNode: Node | null = null
   private readonly displacementUniform: Node
   private readonly pointSizeUniform: Node
@@ -46,8 +46,9 @@ export class ParticleGridPass extends PassNode {
   private readonly bloomSoftnessUniform: Node
   private readonly bloomThresholdUniform: Node
 
-  private points: THREE.Points | null = null
-  private pointsMaterial: THREE.PointsNodeMaterial | null = null
+  private mesh: THREE.Mesh | null = null
+  private meshMaterial: THREE.MeshBasicNodeMaterial | null = null
+  private readonly bgColor = new THREE.Color(0x000000)
   private gridResolution = 64
   private isAnimated = false
   private needsRebuild = true
@@ -82,13 +83,11 @@ export class ParticleGridPass extends PassNode {
     this.noiseScaleUniform = uniform(3.0)
     this.noiseSpeedUniform = uniform(0.5)
 
-    // Bloom uniforms
     this.bloomIntensityUniform = uniform(1.25)
     this.bloomRadiusUniform = uniform(6)
     this.bloomSoftnessUniform = uniform(0.35)
     this.bloomThresholdUniform = uniform(0.6)
 
-    // Blit node for final output
     const blitUv = vec2(uv().x, float(1).sub(uv().y))
     this.blitInputNode = tslTexture(new THREE.Texture(), blitUv)
 
@@ -107,17 +106,14 @@ export class ParticleGridPass extends PassNode {
       this.needsRebuild = false
     }
 
-    // Pass input texture to GPU sampler node
     if (this.inputSamplerNode) {
       this.inputSamplerNode.value = inputTexture
     }
 
-    // Render points to internal RT
-    renderer.setClearColor(0x000000, 1)
+    renderer.setClearColor(this.bgColor, 1)
     renderer.setRenderTarget(this.internalRT)
     renderer.render(this.perspScene, this.perspCamera)
 
-    // Blit to output
     this.blitInputNode.value = this.internalRT.texture
     super.render(renderer, inputTexture, outputTarget, time, delta)
   }
@@ -135,11 +131,9 @@ export class ParticleGridPass extends PassNode {
       typeof params.gridResolution === "number"
         ? Math.max(16, Math.min(256, Math.round(params.gridResolution)))
         : 64
-
-    const nextBloomEnabled = params.bloomEnabled === true
-
     const nextPointSize =
       typeof params.pointSize === "number" ? params.pointSize : 3
+    const nextBloomEnabled = params.bloomEnabled === true
 
     if (nextResolution !== this.gridResolution || nextPointSize !== (this.pointSizeUniform.value as number)) {
       this.gridResolution = nextResolution
@@ -150,7 +144,8 @@ export class ParticleGridPass extends PassNode {
     this.displacementUniform.value =
       typeof params.displacement === "number" ? params.displacement : 0.5
 
-    // Noise
+    this.bgColor.set(typeof params.backgroundColor === "string" ? params.backgroundColor : "#000000")
+
     const noiseAmount = typeof params.noiseAmount === "number" ? params.noiseAmount : 0
     this.noiseAmountUniform.value = noiseAmount
     this.noiseScaleUniform.value =
@@ -159,7 +154,6 @@ export class ParticleGridPass extends PassNode {
       typeof params.noiseSpeed === "number" ? params.noiseSpeed : 0.5
     this.isAnimated = noiseAmount > 0
 
-    // Bloom
     this.bloomIntensityUniform.value =
       typeof params.bloomIntensity === "number" ? Math.max(0, params.bloomIntensity) : 1.25
     this.bloomThresholdUniform.value =
@@ -188,7 +182,6 @@ export class ParticleGridPass extends PassNode {
     this.internalRT.setSize(this.width, this.height)
     this.perspCamera.aspect = this.width / this.height
     this.perspCamera.updateProjectionMatrix()
-    // Rebuild grid to recompute frustum coverage
     this.needsRebuild = true
   }
 
@@ -241,12 +234,22 @@ export class ParticleGridPass extends PassNode {
     const res = this.gridResolution
     const count = res * res
     const aspect = this.width / this.height
+    const pointSize = this.pointSizeUniform.value as number
 
-    // Fill camera frustum at z=0, camera at z=1.2, fov=45
+    // Camera frustum at z=0
     const halfH = Math.tan((45 * Math.PI) / 360) * 1.2
     const halfW = halfH * aspect
 
-    const positions = new Float32Array(count * 3)
+    // Size of each quad in world units — convert point size from pixels to world
+    // At z=0 with camera at 1.2, 1 world unit = canvas_height / (2 * halfH) pixels
+    const pixelsPerUnit = this.height / (2 * halfH)
+    const quadWorldSize = pointSize / pixelsPerUnit
+
+    // Base quad: unit plane centered at origin
+    const baseGeo = new THREE.PlaneGeometry(1, 1)
+
+    // Instance attributes
+    const offsets = new Float32Array(count * 3)
     const gridUvs = new Float32Array(count * 2)
 
     for (let row = 0; row < res; row++) {
@@ -255,35 +258,42 @@ export class ParticleGridPass extends PassNode {
         const u = col / (res - 1)
         const v = row / (res - 1)
 
-        positions[i * 3] = (u * 2 - 1) * halfW
-        positions[i * 3 + 1] = (v * 2 - 1) * halfH
-        positions[i * 3 + 2] = 0
+        offsets[i * 3] = (u * 2 - 1) * halfW
+        offsets[i * 3 + 1] = (v * 2 - 1) * halfH
+        offsets[i * 3 + 2] = 0
 
         gridUvs[i * 2] = u
         gridUvs[i * 2 + 1] = 1 - v
       }
     }
 
-    const geometry = new THREE.BufferGeometry()
-    geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3))
-    geometry.setAttribute("gridUv", new THREE.Float32BufferAttribute(gridUvs, 2))
+    const instancedGeo = new THREE.InstancedBufferGeometry()
+    instancedGeo.index = baseGeo.index
+    instancedGeo.setAttribute("position", baseGeo.getAttribute("position")!)
+    instancedGeo.setAttribute("normal", baseGeo.getAttribute("normal")!)
+    instancedGeo.setAttribute("uv", baseGeo.getAttribute("uv")!)
+    instancedGeo.setAttribute("instanceOffset", new THREE.InstancedBufferAttribute(offsets, 3))
+    instancedGeo.setAttribute("instanceGridUv", new THREE.InstancedBufferAttribute(gridUvs, 2))
+    instancedGeo.instanceCount = count
 
-    // GPU-driven material
-    const gridUvAttr = attribute("gridUv", "vec2")
+    // GPU material
+    const instanceOffset = attribute("instanceOffset", "vec3")
+    const instanceGridUv = attribute("instanceGridUv", "vec2")
 
-    this.inputSamplerNode = tslTexture(this.placeholder, gridUvAttr)
+    // Sample input texture per instance
+    this.inputSamplerNode = tslTexture(this.placeholder, instanceGridUv)
     const sampledColor = this.inputSamplerNode
 
-    // Luma → Z displacement
+    // Luma for Z displacement
     const luma = sampledColor.r
       .mul(0.2126)
       .add(sampledColor.g.mul(0.7152))
       .add(sampledColor.b.mul(0.0722))
 
-    // Per-particle noise — scale UV by resolution so each particle gets its own noise value
+    // Per-particle noise using instance grid UV scaled by resolution
     const noiseUv = vec2(
-      gridUvAttr.x.mul(float(res)).mul(this.noiseScaleUniform),
-      gridUvAttr.y.mul(float(res)).mul(this.noiseScaleUniform),
+      instanceGridUv.x.mul(float(res)).mul(this.noiseScaleUniform),
+      instanceGridUv.y.mul(float(res)).mul(this.noiseScaleUniform),
     )
     const noiseInputX = vec3(
       noiseUv.x,
@@ -298,32 +308,46 @@ export class ParticleGridPass extends PassNode {
     const noiseOffsetX = simplexNoise3d(noiseInputX).mul(this.noiseAmountUniform).mul(0.01)
     const noiseOffsetY = simplexNoise3d(noiseInputY).mul(this.noiseAmountUniform).mul(0.01)
 
-    const displacedPosition = vec3(
-      positionLocal.x.add(noiseOffsetX),
-      positionLocal.y.add(noiseOffsetY),
-      positionLocal.z.add(luma.mul(this.displacementUniform)),
+    // Scale quad vertices by world size, then offset to instance position + noise + displacement
+    const scaledPos = positionLocal.mul(float(quadWorldSize))
+    const finalPos = vec3(
+      scaledPos.x.add(instanceOffset.x).add(noiseOffsetX),
+      scaledPos.y.add(instanceOffset.y).add(noiseOffsetY),
+      scaledPos.z.add(instanceOffset.z).add(luma.mul(this.displacementUniform)),
     )
 
-    const material = new THREE.PointsNodeMaterial()
-    material.positionNode = displacedPosition as Node
-    material.colorNode = vec4(sampledColor.r, sampledColor.g, sampledColor.b, float(1)) as Node
-    material.sizeNode = this.pointSizeUniform as Node
-    material.sizeAttenuation = false
+    // Circle mask using quad UV (0–1 per quad)
+    // Edge width scales with point size so anti-aliasing is always ~1.5px
+    const quadUv = uv()
+    const dist = vec2(quadUv.x.sub(0.5), quadUv.y.sub(0.5)).length()
+    const aaWidth = float(1.5).div(this.pointSizeUniform)
+    const circleMask = smoothstep(float(0.5), float(0.5).sub(aaWidth), dist)
 
-    this.pointsMaterial = material
-    this.points = new THREE.Points(geometry, material)
-    this.perspScene.add(this.points)
+    const material = new THREE.MeshBasicNodeMaterial()
+    material.positionNode = finalPos as Node
+    material.colorNode = vec4(sampledColor.r, sampledColor.g, sampledColor.b, circleMask) as Node
+    material.transparent = true
+    material.alphaTest = 0.01
+    material.depthWrite = false
+    material.side = THREE.DoubleSide
+
+    this.meshMaterial = material
+    this.mesh = new THREE.Mesh(instancedGeo, material)
+    this.mesh.frustumCulled = false
+    this.perspScene.add(this.mesh)
+
+    baseGeo.dispose()
   }
 
   private clearGrid(): void {
-    if (this.points) {
-      this.perspScene.remove(this.points)
-      this.points.geometry.dispose()
-      this.points = null
+    if (this.mesh) {
+      this.perspScene.remove(this.mesh)
+      this.mesh.geometry.dispose()
+      this.mesh = null
     }
-    if (this.pointsMaterial) {
-      this.pointsMaterial.dispose()
-      this.pointsMaterial = null
+    if (this.meshMaterial) {
+      this.meshMaterial.dispose()
+      this.meshMaterial = null
     }
     this.inputSamplerNode = null
   }

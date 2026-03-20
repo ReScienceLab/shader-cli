@@ -14,6 +14,8 @@ declare module "three/webgpu" {
 
   export class MeshBasicNodeMaterial extends Material {
     colorNode: TSLNode | null
+    opacityNode: TSLNode | null
+    positionNode: TSLNode | null
   }
 
   export class PointsNodeMaterial extends Material {
