@@ -17,6 +17,7 @@ import { Select } from "@/shared/ui/select"
 import { Slider } from "@/shared/ui/slider"
 import { Toggle } from "@/shared/ui/toggle"
 import { Typography } from "@/shared/ui/typography"
+import { XYPad } from "@/shared/ui/xy-pad"
 import { useAssetStore } from "@/store/assetStore"
 import { useLayerStore } from "@/store/layerStore"
 import s from "./properties-sidebar.module.css"
@@ -48,7 +49,7 @@ function getSelectedAsset(
 
 function formatLayerKind(kind: string): string {
   if (kind === "source") {
-    return "Image"
+    return "Source"
   }
 
   return kind
@@ -96,7 +97,12 @@ function isParamVisible(
   }
 
   const controllingValue = resolveParamValue(params, definitions, definition.visibleWhen.key)
-  return controllingValue === definition.visibleWhen.equals
+
+  if ("equals" in definition.visibleWhen) {
+    return controllingValue === definition.visibleWhen.equals
+  }
+
+  return typeof controllingValue === "number" && controllingValue >= definition.visibleWhen.gte
 }
 
 function EmptyPropertiesContent() {
@@ -290,7 +296,7 @@ export function PropertiesSidebar() {
   const selectedDefinition = selectedLayer ? getLayerDefinition(selectedLayer.type) : null
   let selectedVisibleParams: ParameterDefinition[] = []
 
-  if (selectedLayer && selectedDefinition && selectedLayer.type !== "image") {
+  if (selectedLayer && selectedDefinition) {
     selectedVisibleParams = selectedDefinition.params.filter((param) =>
       isParamVisible(param, selectedLayer.params, [...selectedDefinition.params]),
     )
@@ -530,34 +536,15 @@ function ParameterField({
       )
 
     case "vec2": {
-      const [x, y] = toVec2Value(value)
-
       return (
-        <div className={s.vec2Group}>
-          <Typography className={s.fieldLabel} tone="secondary" variant="label">
-            {definition.label}
-          </Typography>
-          <Slider
-            className={s.subSlider ?? ""}
-            label="X"
-            max={definition.max ?? 1}
-            min={definition.min ?? -1}
-            onValueChange={(nextValue) => onChange(layerId, definition.key, [nextValue, y])}
-            step={definition.step ?? 0.01}
-            value={x}
-            valueFormatOptions={{ maximumFractionDigits: 2, minimumFractionDigits: 2 }}
-          />
-          <Slider
-            className={s.subSlider ?? ""}
-            label="Y"
-            max={definition.max ?? 1}
-            min={definition.min ?? -1}
-            onValueChange={(nextValue) => onChange(layerId, definition.key, [x, nextValue])}
-            step={definition.step ?? 0.01}
-            value={y}
-            valueFormatOptions={{ maximumFractionDigits: 2, minimumFractionDigits: 2 }}
-          />
-        </div>
+        <XYPad
+          label={definition.label}
+          max={definition.max ?? 1}
+          min={definition.min ?? -1}
+          onValueChange={(nextValue) => onChange(layerId, definition.key, nextValue)}
+          step={definition.step ?? 0.01}
+          value={toVec2Value(value)}
+        />
       )
     }
 

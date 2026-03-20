@@ -56,6 +56,31 @@ export interface LayerStoreActions {
 
 export type LayerStore = LayerStoreState & LayerStoreActions
 
+function getGradientNoiseDefaults(noiseType: string): {
+  warpAmount: number
+  warpScale: number
+} | null {
+  switch (noiseType) {
+    case "perlin":
+      return {
+        warpAmount: 0.06,
+        warpScale: 0.35,
+      }
+    case "turbulence":
+      return {
+        warpAmount: 0.04,
+        warpScale: 0.28,
+      }
+    case "simplex":
+      return {
+        warpAmount: 0.64,
+        warpScale: 5.56,
+      }
+    default:
+      return null
+  }
+}
+
 export function cloneLayerList(layers: EditorLayer[]): EditorLayer[] {
   return layers.map((layer) => ({
     ...layer,
@@ -314,12 +339,23 @@ export const useLayerStore = create<LayerStore>((set, get) => ({
           return layer
         }
 
+        const nextParams = {
+          ...layer.params,
+          [key]: cloneParameterValue(value),
+        }
+
+        if (layer.type === "gradient" && key === "noiseType" && typeof value === "string") {
+          const defaults = getGradientNoiseDefaults(value)
+
+          if (defaults) {
+            nextParams.warpAmount = defaults.warpAmount
+            nextParams.warpScale = defaults.warpScale
+          }
+        }
+
         return {
           ...layer,
-          params: {
-            ...layer.params,
-            [key]: cloneParameterValue(value),
-          },
+          params: nextParams,
           runtimeError: null,
         }
       }),

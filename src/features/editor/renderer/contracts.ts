@@ -40,6 +40,7 @@ export interface EditorRenderer {
 
 type BuildRendererFrameInput = {
   assets: EditorAsset[]
+  clockTime?: number
   delta: number
   layers: EditorLayer[]
   outputSize: Size
@@ -94,7 +95,7 @@ export function buildRendererFrame(input: BuildRendererFrameInput): RendererFram
     .filter((entry) => entry.layer.visible)
 
   return {
-    clock: createProjectClock(input.timeline, input.delta),
+    clock: createProjectClock(input.timeline, input.delta, input.clockTime),
     layers,
     outputSize: input.outputSize,
     pixelRatio: input.pixelRatio,

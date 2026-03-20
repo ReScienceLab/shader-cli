@@ -64,6 +64,7 @@ export function useEditorRenderer() {
 
     let isDisposed = false
     let lastFrameTime = performance.now()
+    let previewTime = 0
     let resizeObserver: ResizeObserver | null = null
 
     editorStore.setWebGPUStatus("initializing")
@@ -109,15 +110,18 @@ export function useEditorRenderer() {
 
         const renderFrame = (now: number) => {
           const layerState = useLayerStore.getState()
-          const timelineState = useTimelineStore.getState()
           const assetState = useAssetStore.getState()
           const editorState = useEditorStore.getState()
           const delta = Math.max(0, (now - lastFrameTime) / 1000)
 
           lastFrameTime = now
+          previewTime += delta
+
+          let timelineState = useTimelineStore.getState()
 
           if (timelineState.isPlaying) {
             timelineState.advance(delta)
+            timelineState = useTimelineStore.getState()
           }
 
           if (delta > 0) {
@@ -126,11 +130,12 @@ export function useEditorRenderer() {
 
           const frame = buildRendererFrame({
             assets: assetState.assets,
+            clockTime: timelineState.isPlaying ? timelineState.currentTime : previewTime,
             delta,
             layers: layerState.layers,
             outputSize: editorState.outputSize,
             pixelRatio: getPixelRatio(),
-            timeline: useTimelineStore.getState(),
+            timeline: timelineState,
             viewportSize: editorState.canvasSize,
           })
 

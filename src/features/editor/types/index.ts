@@ -65,9 +65,15 @@ export type ParameterType =
   | "text"
 
 export type ParameterVisibilityCondition = {
-  equals: boolean | number | string
   key: string
-}
+} & (
+  | {
+      equals: boolean | number | string
+    }
+  | {
+      gte: number
+    }
+)
 
 type ParameterDefinitionBase<TType extends ParameterType, TValue extends ParameterValue> = {
   animatable?: boolean

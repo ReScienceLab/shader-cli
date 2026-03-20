@@ -4,19 +4,33 @@ export const reinhardTonemap = Fn(([color]) => {
   return color.div(color.add(1.0))
 })
 
-export const uncharted2Tonemap = Fn(([color]) => {
-  const a = 0.15
-  const b = 0.5
-  const c = 0.1
-  const d = 0.2
-  const e = 0.02
-  const f = 0.3
+export const totosTonemap = Fn(([color]) => {
+  const compressed = color
+    .mul(vec3(1.18, 1.04, 0.94))
+    .div(color.mul(vec3(0.82, 0.9, 0.98)).add(vec3(0.78, 0.68, 0.6)))
+  const lum = dot(compressed, vec3(0.2126, 0.7152, 0.0722))
+  const shadowLift = smoothstep(0.0, 0.38, lum)
+  const highlightRoll = smoothstep(0.42, 1.0, lum)
+  const toneMix = smoothstep(0.16, 0.82, lum)
+  const cool = vec3(
+    compressed.x.mul(0.82),
+    compressed.y.mul(0.98).add(shadowLift.mul(0.04)),
+    compressed.z.mul(1.24).add(shadowLift.mul(0.08)),
+  )
+  const warm = vec3(
+    compressed.x.mul(1.14).add(highlightRoll.mul(0.08)),
+    compressed.y.mul(1.03).add(highlightRoll.mul(0.03)),
+    compressed.z.mul(0.84),
+  )
+  const splitToned = mix(cool, warm, toneMix)
+  const curved = vec3(
+    pow(splitToned.x, 0.86),
+    pow(splitToned.y, 0.95),
+    pow(splitToned.z, 1.12),
+  )
+  const bleach = mix(curved, vec3(lum), highlightRoll.mul(0.06))
 
-  return color
-    .mul(a)
-    .add(color.mul(color).mul(b))
-    .div(color.mul(color).mul(c).add(color.mul(d)).add(e))
-    .sub(f / e)
+  return bleach.clamp(0.0, 1.0)
 })
 
 export const acesTonemap = Fn(([color]) => {
@@ -26,7 +40,10 @@ export const acesTonemap = Fn(([color]) => {
   const d = 0.59
   const e = 0.14
 
-  return color.mul(a).add(b).div(color.mul(c).add(color.mul(d)).add(e)).clamp(0.0, 1.0)
+  return color
+    .mul(color.mul(a).add(b))
+    .div(color.mul(color.mul(c).add(d)).add(e))
+    .clamp(0.0, 1.0)
 })
 
 export const crossProcessTonemap = Fn(([color]) => {
@@ -65,3 +82,5 @@ export const tanh = Fn(([x]) => {
 
   return e2x.sub(1.0).div(e2x.add(1.0))
 })
+
+export const uncharted2Tonemap = totosTonemap

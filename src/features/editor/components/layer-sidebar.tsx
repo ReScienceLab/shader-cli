@@ -20,7 +20,7 @@ import { useAssetStore } from "@/store/assetStore"
 import { useLayerStore } from "@/store/layerStore"
 import s from "./layer-sidebar.module.css"
 
-type AddLayerAction = "dithering" | "image" | "video"
+type AddLayerAction = "dithering" | "gradient" | "image" | "video"
 type LayerAction = "delete" | "reset"
 
 const addLayerOptions = [
@@ -41,6 +41,15 @@ const addLayerOptions = [
       </span>
     ),
     value: "video",
+  },
+  {
+    label: (
+      <span className={s.menuButton}>
+        <Sparkle size={14} weight="regular" />
+        Mesh Gradient
+      </span>
+    ),
+    value: "gradient",
   },
   {
     label: (
@@ -120,11 +129,17 @@ export function LayerSidebar() {
     addLayer("dithering")
   }
 
+  function handleAddGradient() {
+    addLayer("gradient")
+  }
+
   function handleAddLayer(action: AddLayerAction) {
     if (action === "image") {
       handleImagePick()
     } else if (action === "video") {
       handleVideoPick()
+    } else if (action === "gradient") {
+      handleAddGradient()
     } else {
       handleAddDithering()
     }

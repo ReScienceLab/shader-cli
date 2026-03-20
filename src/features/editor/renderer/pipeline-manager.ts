@@ -1,5 +1,6 @@
 import * as THREE from "three/webgpu"
 import { float, texture as tslTexture, type TSLNode, uv, vec2 } from "three/tsl"
+import { GradientPass } from "@/features/editor/renderer/gradient-pass"
 import { MediaPass } from "@/features/editor/renderer/media-pass"
 import type { PassNode } from "@/features/editor/renderer/pass-node"
 import { createPassNode } from "@/features/editor/renderer/pass-node-factory"
@@ -228,6 +229,10 @@ export class PipelineManager {
 
     if (layer.kind === "source" && (layer.type === "image" || layer.type === "video")) {
       return new MediaPass(layer.id)
+    }
+
+    if (layer.kind === "source" && layer.type === "gradient") {
+      return new GradientPass(layer.id)
     }
 
     throw new Error(`Unsupported layer type in current scope: ${layer.type}`)
