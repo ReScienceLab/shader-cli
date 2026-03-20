@@ -22,7 +22,7 @@ export const compositeModeOptions = [
   { label: "Mask", value: "mask" },
 ] as const
 
-const COLLAPSIBLE_PARAM_GROUPS = new Set(["Points"])
+const COLLAPSIBLE_PARAM_GROUPS = new Set(["Points", "Effects"])
 export const DEFAULT_PARAM_GROUP = "Settings"
 
 export type ParamGroup = {

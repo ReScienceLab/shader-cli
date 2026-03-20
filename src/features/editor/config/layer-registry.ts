@@ -740,6 +740,44 @@ const ditheringParams = [
     step: 1,
     type: "number",
   },
+  {
+    defaultValue: 1,
+    group: "Effects",
+    key: "dotScale",
+    label: "Dot Scale",
+    max: 1,
+    min: 0.1,
+    step: 0.1,
+    type: "number",
+  },
+  {
+    defaultValue: false,
+    group: "Effects",
+    key: "animateDither",
+    label: "Animate Dither",
+    type: "boolean",
+  },
+  {
+    defaultValue: 1,
+    group: "Effects",
+    key: "ditherSpeed",
+    label: "Dither Speed",
+    max: 3,
+    min: 0,
+    step: 0.5,
+    type: "number",
+    visibleWhen: {
+      equals: true,
+      key: "animateDither",
+    },
+  },
+  {
+    defaultValue: false,
+    group: "Effects",
+    key: "chromaticSplit",
+    label: "Chromatic Split",
+    type: "boolean",
+  },
 ] as const satisfies ParameterDefinitions
 
 const halftoneParams = [
