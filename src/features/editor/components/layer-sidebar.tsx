@@ -23,7 +23,7 @@ import { useEditorStore } from "@/store/editorStore"
 import { useLayerStore } from "@/store/layerStore"
 import s from "./layer-sidebar.module.css"
 
-type AddLayerAction = "ascii" | "dithering" | "gradient" | "image" | "particle-grid" | "video"
+type AddLayerAction = "ascii" | "crt" | "dithering" | "gradient" | "image" | "particle-grid" | "pixel-sorting" | "video"
 type LayerAction = "delete" | "reset"
 
 const addLayerOptions = [
@@ -67,6 +67,15 @@ const addLayerOptions = [
     label: (
       <span className={s.menuButton}>
         <Sparkle size={14} weight="regular" />
+        CRT
+      </span>
+    ),
+    value: "crt",
+  },
+  {
+    label: (
+      <span className={s.menuButton}>
+        <Sparkle size={14} weight="regular" />
         Dithering
       </span>
     ),
@@ -80,6 +89,15 @@ const addLayerOptions = [
       </span>
     ),
     value: "particle-grid",
+  },
+  {
+    label: (
+      <span className={s.menuButton}>
+        <Sparkle size={14} weight="regular" />
+        Pixel Sorting
+      </span>
+    ),
+    value: "pixel-sorting",
   },
 ] as const satisfies readonly { label: ReactNode; value: AddLayerAction }[]
 
@@ -222,8 +240,12 @@ export function LayerSidebar() {
       handleAddGradient()
     } else if (action === "ascii") {
       handleAddAscii()
+    } else if (action === "crt") {
+      addLayer("crt")
     } else if (action === "particle-grid") {
       addLayer("particle-grid")
+    } else if (action === "pixel-sorting") {
+      addLayer("pixel-sorting")
     } else {
       handleAddDithering()
     }
