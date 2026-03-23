@@ -1,3 +1,4 @@
+import { bloom } from "three/examples/jsm/tsl/display/BloomNode.js"
 import {
   abs,
   clamp,
@@ -25,8 +26,12 @@ import { grainTexturePattern } from "@/features/editor/shaders/tsl/patterns/grai
 import type { LayerParameterValues } from "@/features/editor/types"
 
 type Node = TSLNode
-type HalftoneColorMode = "cmyk" | "duotone" | "monochrome" | "source"
+type HalftoneColorMode = "cmyk" | "custom" | "duotone" | "monochrome" | "source"
 type CmykBlendMode = "overprint" | "subtractive"
+
+function clamp01(value: number): number {
+  return Math.max(0, Math.min(1, value))
+}
 
 function hexToRgb(hex: string): [number, number, number] {
   const normalized = hex.trim().replace("#", "")
@@ -46,6 +51,8 @@ function hexToRgb(hex: string): [number, number, number] {
 }
 
 export class HalftonePass extends PassNode {
+  private bloomEnabled = false
+  private bloomNode: ReturnType<typeof bloom> | null = null
   private colorMode: HalftoneColorMode = "cmyk"
   private cmykBlendMode: CmykBlendMode = "subtractive"
 
@@ -64,6 +71,18 @@ export class HalftonePass extends PassNode {
 
   private readonly duotoneLightUniform: Node
   private readonly duotoneDarkUniform: Node
+
+  private readonly customBgColorUniform: Node
+  private readonly customColorCountUniform: Node
+  private readonly customLuminanceBiasUniform: Node
+  private readonly customColor1Uniform: Node
+  private readonly customColor2Uniform: Node
+  private readonly customColor3Uniform: Node
+  private readonly customColor4Uniform: Node
+  private readonly bloomIntensityUniform: Node
+  private readonly bloomRadiusUniform: Node
+  private readonly bloomSoftnessUniform: Node
+  private readonly bloomThresholdUniform: Node
 
   private readonly cyanAngleUniform: Node
   private readonly magentaAngleUniform: Node
@@ -106,6 +125,34 @@ export class HalftonePass extends PassNode {
 
     this.duotoneLightUniform = uniform(new THREE.Vector3(0.96, 0.96, 0.94))
     this.duotoneDarkUniform = uniform(new THREE.Vector3(0.11, 0.11, 0.11))
+
+    const [customBgR, customBgG, customBgB] = hexToRgb("#F5F5F0")
+    this.customBgColorUniform = uniform(
+      new THREE.Vector3(customBgR, customBgG, customBgB)
+    )
+    this.customColorCountUniform = uniform(4)
+    this.customLuminanceBiasUniform = uniform(0)
+
+    const [custom1R, custom1G, custom1B] = hexToRgb("#161616")
+    this.customColor1Uniform = uniform(
+      new THREE.Vector3(custom1R, custom1G, custom1B)
+    )
+    const [custom2R, custom2G, custom2B] = hexToRgb("#595959")
+    this.customColor2Uniform = uniform(
+      new THREE.Vector3(custom2R, custom2G, custom2B)
+    )
+    const [custom3R, custom3G, custom3B] = hexToRgb("#A0A0A0")
+    this.customColor3Uniform = uniform(
+      new THREE.Vector3(custom3R, custom3G, custom3B)
+    )
+    const [custom4R, custom4G, custom4B] = hexToRgb("#E8E8E8")
+    this.customColor4Uniform = uniform(
+      new THREE.Vector3(custom4R, custom4G, custom4B)
+    )
+    this.bloomIntensityUniform = uniform(1.25)
+    this.bloomRadiusUniform = uniform(6)
+    this.bloomSoftnessUniform = uniform(0.35)
+    this.bloomThresholdUniform = uniform(0.6)
 
     this.cyanAngleUniform = uniform((15 * Math.PI) / 180)
     this.magentaAngleUniform = uniform((75 * Math.PI) / 180)
@@ -187,6 +234,39 @@ export class HalftonePass extends PassNode {
       ;(this.duotoneDarkUniform.value as THREE.Vector3).set(r, g, b)
     }
 
+    if (typeof params.customBgColor === "string") {
+      const [r, g, b] = hexToRgb(params.customBgColor)
+      ;(this.customBgColorUniform.value as THREE.Vector3).set(r, g, b)
+    }
+    if (typeof params.customColorCount === "number") {
+      this.customColorCountUniform.value = Math.min(
+        4,
+        Math.max(2, Math.round(params.customColorCount))
+      )
+    }
+    if (typeof params.customLuminanceBias === "number") {
+      this.customLuminanceBiasUniform.value = Math.min(
+        1,
+        Math.max(-1, params.customLuminanceBias)
+      )
+    }
+    if (typeof params.customColor1 === "string") {
+      const [r, g, b] = hexToRgb(params.customColor1)
+      ;(this.customColor1Uniform.value as THREE.Vector3).set(r, g, b)
+    }
+    if (typeof params.customColor2 === "string") {
+      const [r, g, b] = hexToRgb(params.customColor2)
+      ;(this.customColor2Uniform.value as THREE.Vector3).set(r, g, b)
+    }
+    if (typeof params.customColor3 === "string") {
+      const [r, g, b] = hexToRgb(params.customColor3)
+      ;(this.customColor3Uniform.value as THREE.Vector3).set(r, g, b)
+    }
+    if (typeof params.customColor4 === "string") {
+      const [r, g, b] = hexToRgb(params.customColor4)
+      ;(this.customColor4Uniform.value as THREE.Vector3).set(r, g, b)
+    }
+
     if (typeof params.cyanAngle === "number") {
       this.cyanAngleUniform.value = (params.cyanAngle * Math.PI) / 180
     }
@@ -221,6 +301,27 @@ export class HalftonePass extends PassNode {
     if (typeof params.dotMorph === "number") {
       this.dotMorphUniform.value = params.dotMorph
     }
+    const nextBloomIntensity =
+      typeof params.bloomIntensity === "number"
+        ? Math.max(0, params.bloomIntensity)
+        : 1.25
+    const nextBloomThreshold =
+      typeof params.bloomThreshold === "number"
+        ? clamp01(params.bloomThreshold)
+        : 0.6
+    const nextBloomRadius =
+      typeof params.bloomRadius === "number"
+        ? Math.max(0, params.bloomRadius)
+        : 6
+    const nextBloomSoftness =
+      typeof params.bloomSoftness === "number"
+        ? clamp01(params.bloomSoftness)
+        : 0.35
+
+    this.bloomIntensityUniform.value = nextBloomIntensity
+    this.bloomRadiusUniform.value = nextBloomRadius
+    this.bloomSoftnessUniform.value = nextBloomSoftness
+    this.bloomThresholdUniform.value = nextBloomThreshold
 
     if (typeof params.inkCyan === "string") {
       const [r, g, b] = hexToRgb(params.inkCyan)
@@ -247,6 +348,13 @@ export class HalftonePass extends PassNode {
       needsRebuild = true
     }
 
+    const resolvedBloomEnabled =
+      nextColorMode === "custom" && params.bloomEnabled === true
+    if (resolvedBloomEnabled !== this.bloomEnabled) {
+      this.bloomEnabled = resolvedBloomEnabled
+      needsRebuild = true
+    }
+
     const nextCmykBlend = parseCmykBlend(params.cmykBlend)
     if (nextCmykBlend !== this.cmykBlendMode) {
       this.cmykBlendMode = nextCmykBlend
@@ -255,12 +363,28 @@ export class HalftonePass extends PassNode {
 
     if (needsRebuild) {
       this.rebuildEffectNode()
+      return
     }
+
+    if (this.bloomNode) {
+      this.bloomNode.strength.value = nextBloomIntensity
+      this.bloomNode.radius.value = this.normalizeBloomRadius(nextBloomRadius)
+      this.bloomNode.threshold.value = nextBloomThreshold
+      this.bloomNode.smoothWidth.value =
+        this.normalizeBloomSoftness(nextBloomSoftness)
+    }
+  }
+
+  override dispose(): void {
+    this.disposeBloomNode()
+    super.dispose()
   }
 
   protected override buildEffectNode(): Node {
     if (!this.spacingUniform) return this.inputNode
 
+    this.disposeBloomNode()
+    this.bloomNode = null
     this.sampleNodes = []
 
     const renderTargetUv = vec2(uv().x, float(1).sub(uv().y))
@@ -295,9 +419,45 @@ export class HalftonePass extends PassNode {
       float(this.duotoneLightUniform.y),
       float(this.duotoneLightUniform.z)
     )
+    const customBgVec = vec3(
+      float(this.customBgColorUniform.x),
+      float(this.customBgColorUniform.y),
+      float(this.customBgColorUniform.z)
+    )
+    const customColor1Vec = vec3(
+      float(this.customColor1Uniform.x),
+      float(this.customColor1Uniform.y),
+      float(this.customColor1Uniform.z)
+    )
+    const customColor2Vec = vec3(
+      float(this.customColor2Uniform.x),
+      float(this.customColor2Uniform.y),
+      float(this.customColor2Uniform.z)
+    )
+    const customColor3Vec = vec3(
+      float(this.customColor3Uniform.x),
+      float(this.customColor3Uniform.y),
+      float(this.customColor3Uniform.z)
+    )
+    const customColor4Vec = vec3(
+      float(this.customColor4Uniform.x),
+      float(this.customColor4Uniform.y),
+      float(this.customColor4Uniform.z)
+    )
+    const customColorCount = clamp(
+      float(this.customColorCountUniform),
+      float(2),
+      float(4)
+    )
+    const customLuminance = clamp(
+      grid.luma.add(float(this.customLuminanceBiasUniform).mul(0.35)),
+      float(0),
+      float(1)
+    )
 
     let dotColor: Node
     let bgColor: Node
+    let emissiveColor: Node = vec3(float(0), float(0), float(0))
 
     switch (this.colorMode) {
       case "monochrome": {
@@ -314,13 +474,74 @@ export class HalftonePass extends PassNode {
         dotColor = mix(darkVec, lightVec, grid.luma)
         bgColor = darkVec
         break
+      case "custom":
+        dotColor = select(
+          customColorCount.lessThan(float(2.5)),
+          select(
+            customLuminance.lessThan(float(0.5)),
+            customColor1Vec,
+            customColor2Vec
+          ),
+          select(
+            customColorCount.lessThan(float(3.5)),
+            select(
+              customLuminance.lessThan(float(1 / 3)),
+              customColor1Vec,
+              select(
+                customLuminance.lessThan(float(2 / 3)),
+                customColor2Vec,
+                customColor3Vec
+              )
+            ),
+            select(
+              customLuminance.lessThan(float(0.25)),
+              customColor1Vec,
+              select(
+                customLuminance.lessThan(float(0.5)),
+                customColor2Vec,
+                select(
+                  customLuminance.lessThan(float(0.75)),
+                  customColor3Vec,
+                  customColor4Vec
+                )
+              )
+            )
+          )
+        )
+        bgColor = customBgVec
+        emissiveColor = dotColor.mul(grid.coverage)
+        break
       default:
         dotColor = grid.color
         bgColor = vec3(1, 1, 1)
         break
     }
 
-    return vec4(mix(bgColor, dotColor, grid.coverage), float(1))
+    const baseColor = mix(bgColor, dotColor, grid.coverage)
+
+    if (!(this.colorMode === "custom" && this.bloomEnabled)) {
+      return vec4(baseColor, float(1))
+    }
+
+    const bloomInput = vec4(emissiveColor, float(1))
+    this.bloomNode = bloom(
+      bloomInput,
+      this.bloomIntensityUniform.value as number,
+      this.normalizeBloomRadius(this.bloomRadiusUniform.value as number),
+      this.bloomThresholdUniform.value as number
+    )
+    this.bloomNode.smoothWidth.value = this.normalizeBloomSoftness(
+      this.bloomSoftnessUniform.value as number
+    )
+
+    return vec4(
+      clamp(
+        baseColor.add(this.getBloomTextureNode().rgb),
+        vec3(float(0), float(0), float(0)),
+        vec3(float(1), float(1), float(1))
+      ),
+      float(1)
+    )
   }
 
   private buildCmykNode(pixCoord: Node, renderTargetUv: Node): Node {
@@ -464,15 +685,43 @@ export class HalftonePass extends PassNode {
         )
       )
     } else {
-      const layerC = vec3(paper.x.mul(transC.x), paper.y.mul(transC.y), paper.z.mul(transC.z))
-      const layerM = vec3(paper.x.mul(transM.x), paper.y.mul(transM.y), paper.z.mul(transM.z))
-      const layerY = vec3(paper.x.mul(transY.x), paper.y.mul(transY.y), paper.z.mul(transY.z))
-      const layerK = vec3(paper.x.mul(transK.x), paper.y.mul(transK.y), paper.z.mul(transK.z))
+      const layerC = vec3(
+        paper.x.mul(transC.x),
+        paper.y.mul(transC.y),
+        paper.z.mul(transC.z)
+      )
+      const layerM = vec3(
+        paper.x.mul(transM.x),
+        paper.y.mul(transM.y),
+        paper.z.mul(transM.z)
+      )
+      const layerY = vec3(
+        paper.x.mul(transY.x),
+        paper.y.mul(transY.y),
+        paper.z.mul(transY.z)
+      )
+      const layerK = vec3(
+        paper.x.mul(transK.x),
+        paper.y.mul(transK.y),
+        paper.z.mul(transK.z)
+      )
 
       finalColor = vec3(
-        clamp(min(min(layerC.x, layerM.x), min(layerY.x, layerK.x)), float(0), float(1)),
-        clamp(min(min(layerC.y, layerM.y), min(layerY.y, layerK.y)), float(0), float(1)),
-        clamp(min(min(layerC.z, layerM.z), min(layerY.z, layerK.z)), float(0), float(1))
+        clamp(
+          min(min(layerC.x, layerM.x), min(layerY.x, layerK.x)),
+          float(0),
+          float(1)
+        ),
+        clamp(
+          min(min(layerC.y, layerM.y), min(layerY.y, layerK.y)),
+          float(0),
+          float(1)
+        ),
+        clamp(
+          min(min(layerC.z, layerM.z), min(layerY.z, layerK.z)),
+          float(0),
+          float(1)
+        )
       )
     }
 
@@ -578,7 +827,11 @@ export class HalftonePass extends PassNode {
         const maxCov = max(cellCov, accCov)
 
         const fieldRadius = max(radius.add(fieldReach), float(0.001))
-        const cellField = clamp(float(1).sub(dist.div(fieldRadius)), float(0), float(1))
+        const cellField = clamp(
+          float(1).sub(dist.div(fieldRadius)),
+          float(0),
+          float(1)
+        )
         const cellFieldSq = cellField.mul(cellField)
 
         accWeightR = accWeightR.add(float(sNode.r).mul(cellFieldSq))
@@ -596,7 +849,11 @@ export class HalftonePass extends PassNode {
     }
 
     const metaEdge = max(float(0.01), aa.div(this.spacingUniform).mul(0.5))
-    const metaCov = smoothstep(float(0.5).sub(metaEdge), float(0.5).add(metaEdge), accField)
+    const metaCov = smoothstep(
+      float(0.5).sub(metaEdge),
+      float(0.5).add(metaEdge),
+      accField
+    )
     const fieldWeight = max(accField, float(0.001))
 
     const finalCov = mix(accCov, metaCov, morph)
@@ -611,6 +868,47 @@ export class HalftonePass extends PassNode {
       luma: finalLuma,
     }
   }
+
+  private normalizeBloomRadius(value: number): number {
+    return clamp01(value / 24)
+  }
+
+  private normalizeBloomSoftness(value: number): number {
+    return Math.max(0.001, value * 0.25)
+  }
+
+  private disposeBloomNode(): void {
+    ;(this.bloomNode as { dispose?: () => void } | null)?.dispose?.()
+  }
+
+  private getBloomTextureNode(): Node {
+    const bloomNode = this.bloomNode as
+      | ({
+          getTexture?: () => Node
+          getTextureNode?: () => Node
+        } & object)
+      | null
+
+    if (!bloomNode) {
+      throw new Error("Bloom node is not initialized")
+    }
+
+    if (
+      "getTextureNode" in bloomNode &&
+      typeof bloomNode.getTextureNode === "function"
+    ) {
+      return bloomNode.getTextureNode()
+    }
+
+    if (
+      "getTexture" in bloomNode &&
+      typeof bloomNode.getTexture === "function"
+    ) {
+      return bloomNode.getTexture()
+    }
+
+    throw new Error("Bloom node does not expose a texture getter")
+  }
 }
 
 function parseColorMode(value: unknown): HalftoneColorMode {
@@ -618,6 +916,7 @@ function parseColorMode(value: unknown): HalftoneColorMode {
     value === "source" ||
     value === "monochrome" ||
     value === "duotone" ||
+    value === "custom" ||
     value === "cmyk"
   ) {
     return value

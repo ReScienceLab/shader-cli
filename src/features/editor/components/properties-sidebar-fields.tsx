@@ -16,6 +16,7 @@ import { Slider } from "@/shared/ui/slider"
 import { Toggle } from "@/shared/ui/toggle"
 import { Typography } from "@/shared/ui/typography"
 import { XYPad } from "@/shared/ui/xy-pad"
+import { useLayerStore } from "@/store/layerStore"
 import { useTimelineStore } from "@/store/timelineStore"
 import s from "./properties-sidebar.module.css"
 import {
@@ -67,9 +68,7 @@ function TimelineKeyframeButton({
   let animation: { opacity: number; scale?: number }
 
   if (control.timelinePanelOpen) {
-    animation = control.reduceMotion
-      ? { opacity: 1 }
-      : { opacity: 1, scale: 1 }
+    animation = control.reduceMotion ? { opacity: 1 } : { opacity: 1, scale: 1 }
   } else {
     animation = control.reduceMotion
       ? { opacity: 0 }
@@ -113,6 +112,101 @@ function TimelineKeyframeButton({
   )
 }
 
+function renderFieldLabelStack(
+  label: string,
+  description: string | undefined,
+  control: TimelineKeyframeControl | null
+) {
+  return (
+    <span
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: "2px",
+        minWidth: 0,
+      }}
+    >
+      <Typography className={s.fieldLabel} tone="secondary" variant="label">
+        {renderFieldLabel(label, control)}
+      </Typography>
+      {description ? (
+        <Typography tone="muted" variant="caption">
+          {description}
+        </Typography>
+      ) : null}
+    </span>
+  )
+}
+
+function getCustomPaletteFieldLabel(
+  definition: ParameterDefinition,
+  layerParams: Record<string, ParameterValue> | null
+): string {
+  if (!layerParams) {
+    return definition.label
+  }
+
+  const colorCount =
+    typeof layerParams.customColorCount === "number"
+      ? layerParams.customColorCount
+      : 4
+
+  switch (definition.key) {
+    case "customColor1":
+      return "Shadows"
+    case "customColor2":
+      return colorCount <= 2 ? "Highlights" : "Midtones"
+    case "customColor3":
+      return colorCount === 3 ? "Highlights" : "High Mids"
+    case "customColor4":
+      return "Highlights"
+    default:
+      return definition.label
+  }
+}
+
+function shouldRenderCustomPaletteField(
+  definition: ParameterDefinition,
+  layerParams: Record<string, ParameterValue> | null
+): boolean {
+  if (!layerParams) {
+    return true
+  }
+
+  if (
+    definition.key === "customBgColor" ||
+    definition.key === "customColorCount" ||
+    definition.key === "customLuminanceBias" ||
+    definition.key === "customColor1" ||
+    definition.key === "customColor2" ||
+    definition.key === "bloomEnabled" ||
+    definition.key === "bloomIntensity" ||
+    definition.key === "bloomThreshold" ||
+    definition.key === "bloomRadius" ||
+    definition.key === "bloomSoftness"
+  ) {
+    return layerParams.colorMode === "custom"
+  }
+
+  if (definition.key === "customColor3") {
+    return (
+      layerParams.colorMode === "custom" &&
+      typeof layerParams.customColorCount === "number" &&
+      layerParams.customColorCount >= 3
+    )
+  }
+
+  if (definition.key === "customColor4") {
+    return (
+      layerParams.colorMode === "custom" &&
+      typeof layerParams.customColorCount === "number" &&
+      layerParams.customColorCount >= 4
+    )
+  }
+
+  return true
+}
+
 export function renderFieldLabel(
   label: string,
   control: TimelineKeyframeControl | null
@@ -148,6 +242,10 @@ export function ParameterField({
   timelinePanelOpen: boolean
   value: ParameterValue
 }) {
+  const layerParams = useLayerStore(
+    (state) =>
+      state.layers.find((layer) => layer.id === layerId)?.params ?? null
+  )
   const timelineTracks = useTimelineStore((state) => state.tracks)
   const timelineControl: TimelineKeyframeControl | null = timelineBinding
     ? {
@@ -161,11 +259,21 @@ export function ParameterField({
       }
     : null
 
+  if (!shouldRenderCustomPaletteField(definition, layerParams)) {
+    return null
+  }
+
+  const fieldLabel = getCustomPaletteFieldLabel(definition, layerParams)
+
   switch (definition.type) {
     case "number":
       return (
         <Slider
-          label={renderFieldLabel(definition.label, timelineControl)}
+          label={renderFieldLabelStack(
+            fieldLabel,
+            definition.description,
+            timelineControl
+          )}
           max={definition.max ?? 100}
           min={definition.min ?? 0}
           onValueChange={(nextValue) =>
@@ -182,10 +290,15 @@ export function ParameterField({
 
     case "select":
       return (
-        <div className={s.inlineField}>
-          <Typography className={s.fieldLabel} tone="secondary" variant="label">
-            {renderFieldLabel(definition.label, timelineControl)}
-          </Typography>
+        <div
+          className={s.inlineField}
+          style={definition.description ? { alignItems: "start" } : undefined}
+        >
+          {renderFieldLabelStack(
+            fieldLabel,
+            definition.description,
+            timelineControl
+          )}
           <Select
             className={s.select ?? ""}
             onValueChange={(nextValue) => {
@@ -201,10 +314,15 @@ export function ParameterField({
 
     case "boolean":
       return (
-        <div className={s.inlineFieldCompact}>
-          <Typography className={s.fieldLabel} tone="secondary" variant="label">
-            {renderFieldLabel(definition.label, timelineControl)}
-          </Typography>
+        <div
+          className={s.inlineFieldCompact}
+          style={definition.description ? { alignItems: "start" } : undefined}
+        >
+          {renderFieldLabelStack(
+            fieldLabel,
+            definition.description,
+            timelineControl
+          )}
           <Toggle
             checked={toBooleanValue(value)}
             className={s.toggleWrap ?? ""}
@@ -217,10 +335,15 @@ export function ParameterField({
 
     case "color":
       return (
-        <div className={s.inlineField}>
-          <Typography className={s.fieldLabel} tone="secondary" variant="label">
-            {renderFieldLabel(definition.label, timelineControl)}
-          </Typography>
+        <div
+          className={s.inlineField}
+          style={definition.description ? { alignItems: "start" } : undefined}
+        >
+          {renderFieldLabelStack(
+            fieldLabel,
+            definition.description,
+            timelineControl
+          )}
           <ColorPicker
             onValueChange={(nextValue) =>
               onChange(layerId, definition.key, nextValue)
@@ -233,7 +356,7 @@ export function ParameterField({
     case "vec2":
       return (
         <XYPad
-          label={renderFieldLabel(definition.label, timelineControl)}
+          label={renderFieldLabel(fieldLabel, timelineControl)}
           max={definition.max ?? 1}
           min={definition.min ?? -1}
           onValueChange={(nextValue) =>
@@ -247,9 +370,11 @@ export function ParameterField({
     case "text":
       return (
         <label className={s.textField}>
-          <Typography className={s.fieldLabel} tone="secondary" variant="label">
-            {renderFieldLabel(definition.label, timelineControl)}
-          </Typography>
+          {renderFieldLabelStack(
+            fieldLabel,
+            definition.description,
+            timelineControl
+          )}
           <input
             className={s.textInput}
             maxLength={(definition as TextParameterDefinition).maxLength}

@@ -1,7 +1,7 @@
 export const LAYER_KINDS = ["source", "effect", "model"] as const
 export type LayerKind = (typeof LAYER_KINDS)[number]
 
-export const SOURCE_LAYER_TYPES = ["image", "video", "gradient", "fluid"] as const
+export const SOURCE_LAYER_TYPES = ["image", "video", "gradient", "fluid", "live"] as const
 export type SourceLayerType = (typeof SOURCE_LAYER_TYPES)[number]
 
 export const EFFECT_LAYER_TYPES = [

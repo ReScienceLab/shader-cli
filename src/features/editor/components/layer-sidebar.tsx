@@ -1,6 +1,7 @@
 "use client"
 
 import {
+  Camera,
   DotsSixVerticalIcon,
   DotsThreeVerticalIcon,
   Eye,
@@ -23,7 +24,7 @@ import { useEditorStore } from "@/store/editorStore"
 import { useLayerStore } from "@/store/layerStore"
 import s from "./layer-sidebar.module.css"
 
-type AddLayerAction = "ascii" | "crt" | "dithering" | "gradient" | "halftone" | "image" | "particle-grid" | "pixel-sorting" | "video"
+type AddLayerAction = "ascii" | "crt" | "dithering" | "gradient" | "halftone" | "image" | "live" | "particle-grid" | "pixel-sorting" | "video"
 type LayerAction = "delete" | "reset"
 
 const addLayerOptions = [
@@ -44,6 +45,15 @@ const addLayerOptions = [
       </span>
     ),
     value: "video",
+  },
+  {
+    label: (
+      <span className={s.menuButton}>
+        <Camera size={14} weight="regular" />
+        Live Camera
+      </span>
+    ),
+    value: "live",
   },
   {
     label: (
@@ -117,6 +127,10 @@ function getLayerSecondaryText(layer: EditorLayer, asset: EditorAsset | null): s
 
   if (layer.type === "image" || layer.type === "video" || layer.type === "model") {
     return asset?.fileName ?? "No asset selected"
+  }
+
+  if (layer.type === "live") {
+    return "webcam"
   }
 
   return layer.type.replaceAll("-", " ")
@@ -245,6 +259,8 @@ export function LayerSidebar() {
       handleImagePick()
     } else if (action === "video") {
       handleVideoPick()
+    } else if (action === "live") {
+      addLayer("live")
     } else if (action === "gradient") {
       handleAddGradient()
     } else if (action === "ascii") {

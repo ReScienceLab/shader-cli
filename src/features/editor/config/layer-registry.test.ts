@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test"
-import { getLayerDefinition } from "@/features/editor/config/layer-registry"
 import { isParamVisible } from "@/features/editor/components/properties-sidebar-utils"
+import { getLayerDefinition } from "@/features/editor/config/layer-registry"
 import { buildParameterValues } from "@/features/editor/utils/parameter-schema"
 
 describe("CRT layer registry", () => {
@@ -24,18 +24,92 @@ describe("CRT layer registry", () => {
 
   it("only shows signal artifacts for composite TV mode", () => {
     const definition = getLayerDefinition("crt")
-    const signalArtifacts = definition.params.find((param) => param.key === "signalArtifacts")
+    const signalArtifacts = definition.params.find(
+      (param) => param.key === "signalArtifacts"
+    )
 
     expect(signalArtifacts).not.toBeUndefined()
 
     expect(
-      isParamVisible(signalArtifacts!, { crtMode: "slot-mask" }, [...definition.params]),
+      isParamVisible(signalArtifacts!, { crtMode: "slot-mask" }, [
+        ...definition.params,
+      ])
     ).toBe(false)
     expect(
-      isParamVisible(signalArtifacts!, { crtMode: "aperture-grille" }, [...definition.params]),
+      isParamVisible(signalArtifacts!, { crtMode: "aperture-grille" }, [
+        ...definition.params,
+      ])
     ).toBe(false)
     expect(
-      isParamVisible(signalArtifacts!, { crtMode: "composite-tv" }, [...definition.params]),
+      isParamVisible(signalArtifacts!, { crtMode: "composite-tv" }, [
+        ...definition.params,
+      ])
+    ).toBe(true)
+  })
+
+  it("shows custom halftone palette fields only in custom mode", () => {
+    const definition = getLayerDefinition("halftone")
+    const params = buildParameterValues(definition.params)
+    const bloomEnabled = definition.params.find(
+      (param) => param.key === "bloomEnabled"
+    )
+    const customBias = definition.params.find(
+      (param) => param.key === "customLuminanceBias"
+    )
+    const customColor4 = definition.params.find(
+      (param) => param.key === "customColor4"
+    )
+    const customBackground = definition.params.find(
+      (param) => param.key === "customBgColor"
+    )
+
+    expect(bloomEnabled).not.toBeUndefined()
+    expect(customBias).not.toBeUndefined()
+    expect(customColor4).not.toBeUndefined()
+    expect(customBackground).not.toBeUndefined()
+
+    expect(params.bloomEnabled).toBe(false)
+    expect(isParamVisible(bloomEnabled!, params, [...definition.params])).toBe(
+      false
+    )
+    expect(params.customLuminanceBias).toBe(0)
+    expect(isParamVisible(customBias!, params, [...definition.params])).toBe(
+      false
+    )
+    expect(
+      isParamVisible(customBackground!, params, [...definition.params])
+    ).toBe(false)
+    expect(isParamVisible(customColor4!, params, [...definition.params])).toBe(
+      true
+    )
+    expect(
+      isParamVisible(bloomEnabled!, { ...params, colorMode: "custom" }, [
+        ...definition.params,
+      ])
+    ).toBe(true)
+    expect(
+      isParamVisible(customBias!, { ...params, colorMode: "custom" }, [
+        ...definition.params,
+      ])
+    ).toBe(true)
+    expect(
+      isParamVisible(customBackground!, { ...params, colorMode: "custom" }, [
+        ...definition.params,
+      ])
+    ).toBe(true)
+    expect(
+      isParamVisible(
+        customColor4!,
+        { ...params, colorMode: "custom", customColorCount: 3 },
+        [...definition.params]
+      )
+    ).toBe(false)
+    expect(
+      isParamVisible(
+        customColor4!,
+        { ...params, colorMode: "custom", customColorCount: 4 },
+        [...definition.params]
+      )
     ).toBe(true)
   })
 })

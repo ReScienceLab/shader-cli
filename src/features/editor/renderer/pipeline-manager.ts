@@ -1,6 +1,7 @@
 import * as THREE from "three/webgpu"
 import { float, texture as tslTexture, type TSLNode, uv, vec2 } from "three/tsl"
 import { GradientPass } from "@/features/editor/renderer/gradient-pass"
+import { LivePass } from "@/features/editor/renderer/live-pass"
 import { MediaPass } from "@/features/editor/renderer/media-pass"
 import type { PassNode } from "@/features/editor/renderer/pass-node"
 import { createPassNode } from "@/features/editor/renderer/pass-node-factory"
@@ -8,7 +9,7 @@ import type { RenderableLayerPass } from "@/features/editor/renderer/contracts"
 import type { EditorLayer, Size } from "@/features/editor/types"
 import { parameterValuesSignature } from "@/features/editor/utils/parameter-schema"
 
-type LayerPassNode = MediaPass | PassNode
+type LayerPassNode = LivePass | MediaPass | PassNode
 
 const RENDER_TARGET_OPTIONS = {
   depthBuffer: false,
@@ -243,6 +244,23 @@ export class PipelineManager {
       }
     }
 
+    if (pass instanceof LivePass) {
+      const facingMode =
+        typeof renderableLayer.params.facingMode === "string"
+          ? renderableLayer.params.facingMode
+          : "user"
+
+      if (facingMode !== pass.getFacingMode() || !pass.needsContinuousRender()) {
+        void pass
+          .startCamera(facingMode)
+          .then(() => {
+            this.dirty = true
+          })
+          .catch(() => {
+            this.dirty = true
+          })
+      }
+    }
   }
 
   private createPass(layer: EditorLayer): LayerPassNode {
@@ -256,6 +274,10 @@ export class PipelineManager {
 
     if (layer.kind === "source" && layer.type === "gradient") {
       return new GradientPass(layer.id)
+    }
+
+    if (layer.kind === "source" && layer.type === "live") {
+      return new LivePass(layer.id)
     }
 
     throw new Error(`Unsupported layer type in current scope: ${layer.type}`)
