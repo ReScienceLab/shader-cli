@@ -44,7 +44,6 @@ import {
   useLayerStore,
   useTimelineStore,
 } from "@/store"
-import s from "./editor-export-dialog.module.css"
 
 type ExportTab = "image" | "project" | "video"
 
@@ -366,11 +365,11 @@ export function EditorExportDialog({
   return createPortal(
     <AnimatePresence initial={false}>
       {open ? (
-        <div className={s.dialogRoot} role="presentation">
+        <div className="fixed inset-0 z-90" role="presentation">
           <motion.button
             animate={{ opacity: 1 }}
             aria-label="Close export dialog"
-            className={s.backdrop}
+            className="absolute inset-0 w-full border-0 bg-[rgb(4_5_7_/_0.56)]"
             exit={{ opacity: 0 }}
             initial={{ opacity: 0 }}
             onClick={() => onOpenChange(false)}
@@ -381,12 +380,12 @@ export function EditorExportDialog({
             type="button"
           />
 
-          <div className={s.dialogWrap}>
+          <div className="absolute top-[76px] left-1/2 w-[min(560px,calc(100vw-32px))] max-w-[min(560px,calc(100vw-32px))] -translate-x-1/2">
             <motion.div
               animate={
                 reduceMotion ? { opacity: 1 } : { opacity: 1, scale: 1, y: 0 }
               }
-              className={s.dialogMotion}
+              className="w-full"
               exit={
                 reduceMotion
                   ? { opacity: 0 }
@@ -405,17 +404,17 @@ export function EditorExportDialog({
             >
               <GlassPanel
                 aria-modal="true"
-                className={s.dialog}
+                className="max-h-[calc(100vh-112px)] overflow-hidden p-0"
                 role="dialog"
                 variant="panel"
               >
-                <div className={s.dialogHeader}>
-                  <Typography as="h2" className={s.dialogTitle} variant="title">
+                <div className="flex items-center justify-between border-b border-[var(--ds-border-divider)] px-4 pt-[14px] pb-3">
+                  <Typography as="h2" className="leading-5" variant="title">
                     Export
                   </Typography>
                   <IconButton
                     aria-label="Close export dialog"
-                    className={s.closeButton}
+                    className="h-7 w-7"
                     onClick={() => onOpenChange(false)}
                     variant="default"
                   >
@@ -423,12 +422,13 @@ export function EditorExportDialog({
                   </IconButton>
                 </div>
 
-                <div className={s.tabRow}>
+                <div className="flex gap-1.5 border-b border-[var(--ds-border-divider)] px-4 py-[10px]">
                   {(["image", "video", "project"] as const).map((tab) => (
                     <button
                       className={cn(
-                        s.tabButton,
-                        activeTab === tab && s.tabButtonActive
+                        "inline-flex min-h-7 items-center justify-center rounded-[var(--ds-radius-control)] border border-transparent px-[10px] leading-none transition-[background-color,border-color,color] duration-160 ease-[var(--ease-out-cubic)] hover:bg-[var(--ds-color-surface-subtle)] hover:border-[var(--ds-border-subtle)]",
+                        activeTab === tab &&
+                          "bg-[var(--ds-color-surface-active)] border-[var(--ds-border-active)]"
                       )}
                       key={tab}
                       onClick={() => setNextTab(tab)}
@@ -451,15 +451,18 @@ export function EditorExportDialog({
                       ? { height: "auto" }
                       : { height: contentHeight }
                   }
-                  className={s.dialogBody}
+                  className="overflow-hidden px-4 pt-[14px] pb-4"
                   transition={
                     reduceMotion
                       ? { duration: 0.12, ease: "easeOut" }
                       : { duration: 0.24, ease: [0.22, 1, 0.36, 1] }
                   }
                 >
-                  <div aria-hidden="true" className={s.measureWrap}>
-                    <div className={s.measureView} ref={measureRef}>
+                  <div
+                    aria-hidden="true"
+                    className="pointer-events-none absolute top-0 left-0 -z-1 w-full invisible"
+                  >
+                    <div className="w-full" ref={measureRef}>
                       {activeTab === "image" ? (
                         <ImageTabContent
                           imageAspect={imageAspect}
@@ -509,11 +512,11 @@ export function EditorExportDialog({
                     </div>
                   </div>
 
-                  <div className={s.contentViewport}>
+                  <div className="relative">
                     <AnimatePresence initial={false} mode="wait">
                       <motion.div
                         animate={{ opacity: 1 }}
-                        className={s.tabPane}
+                        className="w-full"
                         exit={{ opacity: 0 }}
                         initial={{ opacity: 0 }}
                         key={activeTab}
@@ -577,13 +580,16 @@ export function EditorExportDialog({
                 </motion.div>
 
                 {errorMessage ? (
-                  <Typography className={s.errorMessage} variant="caption">
+                  <Typography
+                    className="mx-4 mb-4 rounded-[var(--ds-radius-control)] border border-[rgb(255_74_74_/_0.18)] bg-[rgb(255_74_74_/_0.08)] px-3 py-[10px] leading-[14px] text-[rgb(255_191_191_/_0.92)]"
+                    variant="caption"
+                  >
                     {errorMessage}
                   </Typography>
                 ) : null}
                 {statusMessage ? (
                   <Typography
-                    className={s.statusMessage}
+                    className="mx-4 mb-4 rounded-[var(--ds-radius-control)] border border-white/9 bg-white/6 px-3 py-[10px] leading-[14px]"
                     tone="secondary"
                     variant="caption"
                   >
@@ -622,7 +628,7 @@ function ImageTabContent({
   onImageWidthChange: (value: number) => void
 }) {
   return (
-    <section className={s.sectionStack}>
+    <section className="flex flex-col gap-[14px]">
       <FieldLabel label="Aspect">
         <PresetRow>
           {ASPECT_PRESETS.map((preset) => (
@@ -656,7 +662,7 @@ function ImageTabContent({
         width={imageSize.width}
       />
 
-      <Typography className={s.note} tone="muted" variant="caption">
+      <Typography className="leading-[14px]" tone="muted" variant="caption">
         Uses the current playhead frame.
       </Typography>
 
@@ -706,7 +712,7 @@ function VideoTabContent({
   webmSupported: boolean
 }) {
   return (
-    <section className={s.sectionStack}>
+    <section className="flex flex-col gap-[14px]">
       <FieldLabel label="Format">
         <PresetRow>
           <PillButton
@@ -757,7 +763,7 @@ function VideoTabContent({
         width={videoSize.width}
       />
 
-      <div className={s.inlineGrid}>
+      <div className="grid gap-[10px] min-[900px]:grid-cols-2">
         <FieldLabel label="FPS">
           <PresetRow>
             {VIDEO_FPS_PRESETS.map((fps) => (
@@ -781,7 +787,7 @@ function VideoTabContent({
         </FieldLabel>
       </div>
 
-      <Typography className={s.note} tone="muted" variant="caption">
+      <Typography className="leading-[14px]" tone="muted" variant="caption">
         Starts from the current playhead position.
       </Typography>
 
@@ -816,14 +822,18 @@ function ProjectTabContent({
   onImportDrop: (event: DragEvent<HTMLLabelElement>) => void
 }) {
   return (
-    <section className={s.sectionStack}>
+    <section className="flex flex-col gap-[14px]">
       <Button disabled={isWorking} onClick={() => void onExport()}>
         <FileArrowDownIcon size={16} weight="bold" />
         Export .lab file
       </Button>
 
       <label
-        className={cn(s.dropZone, isDraggingImport && s.dropZoneActive)}
+        className={cn(
+          "grid items-center gap-3 rounded-[var(--ds-radius-panel)] border border-dashed border-[var(--ds-border-divider)] bg-[var(--ds-color-surface-subtle)] p-[14px] min-[900px]:grid-cols-[auto_1fr_auto]",
+          isDraggingImport &&
+            "border-[var(--ds-border-hover)] bg-[var(--ds-color-surface-active)]"
+        )}
         onDragEnter={() => onDragStateChange(true)}
         onDragLeave={() => onDragStateChange(false)}
         onDragOver={(event) => {
@@ -845,10 +855,10 @@ function ProjectTabContent({
 
         <UploadSimpleIcon size={20} weight="bold" />
         <div>
-          <Typography className={s.dropTitle} variant="label">
+          <Typography className="leading-4" variant="label">
             Import .lab configuration
           </Typography>
-          <Typography className={s.dropText} tone="tertiary" variant="caption">
+          <Typography className="mt-1" tone="tertiary" variant="caption">
             Drag and drop here. This will replace your current setup.
           </Typography>
         </div>
@@ -876,8 +886,8 @@ function FieldLabel({
   label: string
 }) {
   return (
-    <div className={s.field}>
-      <Typography className={s.fieldLabel} tone="secondary" variant="overline">
+    <div className="flex flex-col gap-2">
+      <Typography className="uppercase" tone="secondary" variant="overline">
         {label}
       </Typography>
       {children}
@@ -886,7 +896,7 @@ function FieldLabel({
 }
 
 function PresetRow({ children }: { children: ReactNode }) {
-  return <div className={s.presetRow}>{children}</div>
+  return <div className="flex flex-wrap gap-1.5">{children}</div>
 }
 
 function PillButton({
@@ -902,7 +912,11 @@ function PillButton({
 }) {
   return (
     <button
-      className={cn(s.pillButton, active && s.pillButtonActive)}
+      className={cn(
+        "inline-flex min-h-7 items-center justify-center rounded-[var(--ds-radius-control)] border border-[var(--ds-border-divider)] bg-[var(--ds-color-surface-control)] px-[10px] leading-none transition-[background-color,border-color,color] duration-160 ease-[var(--ease-out-cubic)] hover:not-disabled:bg-white/8 hover:not-disabled:border-[var(--ds-border-hover)] disabled:cursor-not-allowed disabled:opacity-42",
+        active &&
+          "bg-[var(--ds-color-surface-active)] border-[var(--ds-border-active)]"
+      )}
       disabled={disabled}
       onClick={onClick}
       type="button"
@@ -930,7 +944,7 @@ function DimensionFields({
   width: number
 }) {
   return (
-    <div className={s.inlineGrid}>
+    <div className="grid gap-[10px] min-[900px]:grid-cols-2">
       <FieldLabel label="Width">
         <NumberInput min={1} onChange={onWidthChange} step={1} value={width} />
       </FieldLabel>
@@ -959,7 +973,7 @@ function NumberInput({
 }) {
   return (
     <input
-      className={s.numberInput}
+      className="min-h-9 rounded-[var(--ds-radius-control)] border border-[var(--ds-border-divider)] bg-[var(--ds-color-surface-control)] px-[10px] py-2 font-[var(--ds-font-mono)] text-[12px] leading-4 text-[var(--ds-color-text-primary)]"
       min={min}
       onChange={(event) => {
         const nextValue = Number.parseFloat(event.currentTarget.value)

@@ -29,7 +29,6 @@ import {
   useTimelineStore,
 } from "@/store"
 import { EditorExportDialog } from "./editor-export-dialog"
-import s from "./editor-topbar.module.css"
 
 const HISTORY_COMMIT_DEBOUNCE_MS = 220
 
@@ -211,12 +210,15 @@ export function EditorTopBar() {
 
   return (
     <>
-      <div className={s.root}>
-        <GlassPanel className={s.bar} variant="panel">
-          <div className={s.group}>
+      <div className="pointer-events-none fixed top-4 right-0 left-0 z-45 flex justify-center">
+        <GlassPanel
+          className="pointer-events-auto flex min-h-11 w-auto items-center justify-between gap-[var(--ds-space-4)] px-[10px] py-2 max-[899px]:gap-[10px] max-[899px]:p-2"
+          variant="panel"
+        >
+          <div className="inline-flex items-center gap-1.5 max-[899px]:gap-1">
             <IconButton
               aria-label="Undo"
-              className={s.controlButton}
+              className="h-7 w-7 disabled:opacity-45"
               disabled={!canUndo}
               onClick={handleUndo}
               variant="default"
@@ -225,7 +227,7 @@ export function EditorTopBar() {
             </IconButton>
             <IconButton
               aria-label="Redo"
-              className={s.controlButton}
+              className="h-7 w-7 disabled:opacity-45"
               disabled={!canRedo}
               onClick={handleRedo}
               variant="default"
@@ -234,32 +236,39 @@ export function EditorTopBar() {
             </IconButton>
           </div>
 
-          <div className={s.group}>
+          <div className="inline-flex items-center gap-1.5 max-[899px]:gap-1">
             <IconButton
               aria-label="Zoom out"
-              className={s.controlButton}
+              className="h-7 w-7 disabled:opacity-45"
               onClick={() => applyZoomStep("out")}
               variant="default"
             >
               <MinusIcon size={18} weight="bold" />
             </IconButton>
-            <button className={s.zoomReadout} onClick={resetView} type="button">
+            <button
+              className="inline-flex h-7 min-w-16 items-center justify-center rounded-[var(--ds-radius-icon)] border border-[var(--ds-border-divider)] bg-[var(--ds-color-surface-control)] px-[10px] transition-[background-color,border-color,color,transform] duration-160 ease-[var(--ease-out-cubic)] hover:bg-white/8 hover:border-[var(--ds-border-hover)] active:scale-[0.98] max-[899px]:min-w-14"
+              onClick={resetView}
+              type="button"
+            >
               <Typography as="span" tone="secondary" variant="monoSm">
                 {Math.round(zoom * 100)}%
               </Typography>
             </button>
             <IconButton
               aria-label="Zoom in"
-              className={s.controlButton}
+              className="h-7 w-7 disabled:opacity-45"
               onClick={() => applyZoomStep("in")}
               variant="default"
             >
               <PlusIcon size={18} weight="bold" />
             </IconButton>
-            <span aria-hidden="true" className={s.divider} />
+            <span
+              aria-hidden="true"
+              className="block h-5 w-px rounded-full bg-[var(--ds-border-divider)]"
+            />
             <IconButton
               aria-label="Export"
-              className={s.controlButton}
+              className="h-7 w-7 disabled:opacity-45"
               onClick={() => setIsExportDialogOpen(true)}
               variant="default"
             >
