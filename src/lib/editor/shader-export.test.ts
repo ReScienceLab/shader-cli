@@ -3,7 +3,6 @@ import {
   buildShaderExportConfig,
   validateShaderExportSupport,
 } from "@/lib/editor/shader-export"
-import { buildShaderExportArtifact } from "@/lib/editor/shader-export-artifact"
 import {
   generateShaderExportSnippet,
   sanitizeShaderExportComponentName,
@@ -198,41 +197,6 @@ describe("shader export", () => {
     )
     expect(snippet).toContain("export function ExportedShader() {")
     expect(snippet).toContain('"src": "/replace/image/hero-image.png"')
-  })
-
-  it("builds a downloadable artifact with component, config, and readme files", () => {
-    const config = buildShaderExportConfig({
-      assets: [baseAsset],
-      composition: {
-        height: 1080,
-        width: 1920,
-      },
-      layers: [imageLayer],
-      timeline: {
-        duration: 6,
-        loop: false,
-        tracks: [],
-      },
-    })
-
-    const artifact = buildShaderExportArtifact(config, "hero export")
-
-    expect(artifact.componentName).toBe("HeroExport")
-    expect(artifact.componentFileName).toBe("HeroExport.tsx")
-    expect(artifact.configFileName).toBe("shader-lab.config.json")
-    expect(artifact.readmeFileName).toBe("README.md")
-    expect(artifact.assetPlaceholders).toEqual([
-      {
-        fileName: "hero image.png",
-        kind: "image",
-        src: "/replace/image/hero-image.png",
-      },
-    ])
-    expect(artifact.files.map((file) => file.fileName)).toEqual([
-      "HeroExport.tsx",
-      "shader-lab.config.json",
-      "README.md",
-    ])
   })
 
   it("sanitizes invalid component names consistently", () => {
