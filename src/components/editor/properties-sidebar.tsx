@@ -359,7 +359,7 @@ export function PropertiesSidebar() {
   return (
     <aside
       className={cn(
-        "pointer-events-none absolute top-[76px] right-4 z-20 w-[300px] translate-x-0 transition-[opacity,transform] duration-[220ms,260ms] ease-[ease-out,cubic-bezier(0.22,1,0.36,1)]",
+        "pointer-events-none absolute top-[76px] right-4 z-20 w-[300px] translate-x-0 transition-[opacity,translate] duration-[220ms,260ms] ease-[ease-out,cubic-bezier(0.22,1,0.36,1)]",
         !rightSidebarVisible && "translate-x-[18px] opacity-0"
       )}
     >
