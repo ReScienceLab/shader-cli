@@ -39,6 +39,7 @@ import {
   buildShaderExportConfig,
   validateShaderExportSupport,
 } from "@/lib/editor/shader-export"
+import { buildShaderExportArtifact } from "@/lib/editor/shader-export-artifact"
 import { generateShaderExportSnippet } from "@/lib/editor/shader-export-snippet"
 import { cn } from "@/lib/cn"
 import { Button } from "@/components/ui/button"
@@ -123,6 +124,8 @@ export function EditorExportDialog({
   const [videoFps, setVideoFps] = useState(30)
   const [videoFormat, setVideoFormat] = useState<VideoExportFormat>("webm")
   const [isCopyingShader, setIsCopyingShader] = useState(false)
+  const [shaderComponentName, setShaderComponentName] =
+    useState("ExportedShader")
   const importInputRef = useRef<HTMLInputElement | null>(null)
   const measureRef = useRef<HTMLDivElement | null>(null)
 
@@ -154,6 +157,34 @@ export function EditorExportDialog({
     compositionSize,
     layers,
     shaderExportIssues,
+    timelineDuration,
+    timelineLoop,
+    timelineTracks,
+  ])
+  const shaderArtifact = useMemo(() => {
+    if (!shaderSnippet) {
+      return null
+    }
+
+    return buildShaderExportArtifact(
+      buildShaderExportConfig({
+        assets,
+        composition: compositionSize,
+        layers,
+        timeline: {
+          duration: timelineDuration,
+          loop: timelineLoop,
+          tracks: timelineTracks,
+        },
+      }),
+      shaderComponentName,
+    )
+  }, [
+    assets,
+    compositionSize,
+    layers,
+    shaderComponentName,
+    shaderSnippet,
     timelineDuration,
     timelineLoop,
     timelineTracks,
@@ -401,6 +432,32 @@ export function EditorExportDialog({
     }
   }
 
+  function handleShaderFileDownload(
+    kind: "component" | "config" | "readme",
+  ) {
+    clearFeedback()
+
+    if (!shaderArtifact) {
+      setErrorMessage(
+        shaderExportIssues[0]?.message ?? "Shader export is not available for this project.",
+      )
+      return
+    }
+
+    const targetFileName = getShaderArtifactFileName(shaderArtifact, kind)
+    const file = shaderArtifact.files.find(
+      (candidate) => candidate.fileName === targetFileName,
+    )
+
+    if (!file) {
+      setErrorMessage("Export file could not be generated.")
+      return
+    }
+
+    downloadBlob(new Blob([file.content], { type: file.mimeType }), file.fileName)
+    setStatusMessage(`${file.fileName} downloaded.`)
+  }
+
   function handleImportChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0]
     event.currentTarget.value = ""
@@ -578,9 +635,27 @@ export function EditorExportDialog({
                       ) : null}
                       {activeTab === "shader" ? (
                         <ShaderTabContent
+                          componentName={shaderComponentName}
+                          componentFileName={
+                            shaderArtifact?.componentFileName ?? "ExportedShader.tsx"
+                          }
+                          configFileName={
+                            shaderArtifact?.configFileName ?? "shader-lab.config.json"
+                          }
+                          assetPlaceholders={shaderArtifact?.assetPlaceholders ?? []}
                           isCopying={isCopyingShader}
                           issues={shaderExportIssues}
                           onCopy={handleShaderCopy}
+                          onComponentNameChange={setShaderComponentName}
+                          onDownloadComponent={() =>
+                            handleShaderFileDownload("component")
+                          }
+                          onDownloadConfig={() =>
+                            handleShaderFileDownload("config")
+                          }
+                          onDownloadReadme={() =>
+                            handleShaderFileDownload("readme")
+                          }
                           snippet={shaderSnippet}
                         />
                       ) : null}
@@ -650,12 +725,30 @@ export function EditorExportDialog({
                           />
                         ) : null}
                         {activeTab === "shader" ? (
-                          <ShaderTabContent
-                            isCopying={isCopyingShader}
-                            issues={shaderExportIssues}
-                            onCopy={handleShaderCopy}
-                            snippet={shaderSnippet}
-                          />
+                        <ShaderTabContent
+                          componentName={shaderComponentName}
+                          componentFileName={
+                            shaderArtifact?.componentFileName ?? "ExportedShader.tsx"
+                          }
+                          configFileName={
+                            shaderArtifact?.configFileName ?? "shader-lab.config.json"
+                          }
+                          assetPlaceholders={shaderArtifact?.assetPlaceholders ?? []}
+                          isCopying={isCopyingShader}
+                          issues={shaderExportIssues}
+                          onCopy={handleShaderCopy}
+                          onComponentNameChange={setShaderComponentName}
+                          onDownloadComponent={() =>
+                            handleShaderFileDownload("component")
+                          }
+                          onDownloadConfig={() =>
+                            handleShaderFileDownload("config")
+                          }
+                          onDownloadReadme={() =>
+                            handleShaderFileDownload("readme")
+                          }
+                          snippet={shaderSnippet}
+                        />
                         ) : null}
                       </motion.div>
                     </AnimatePresence>
@@ -687,6 +780,22 @@ export function EditorExportDialog({
     </AnimatePresence>,
     document.body
   )
+}
+
+function getShaderArtifactFileName(
+  shaderArtifact: NonNullable<
+    ReturnType<typeof buildShaderExportArtifact> | null
+  >,
+  kind: "component" | "config" | "readme",
+) {
+  switch (kind) {
+    case "component":
+      return shaderArtifact.componentFileName
+    case "config":
+      return shaderArtifact.configFileName
+    case "readme":
+      return shaderArtifact.readmeFileName
+  }
 }
 
 function ImageTabContent({
@@ -962,14 +1071,34 @@ function ProjectTabContent({
 }
 
 function ShaderTabContent({
+  assetPlaceholders,
+  componentFileName,
+  componentName,
+  configFileName,
   isCopying,
   issues,
   onCopy,
+  onComponentNameChange,
+  onDownloadComponent,
+  onDownloadConfig,
+  onDownloadReadme,
   snippet,
 }: {
+  assetPlaceholders: {
+    fileName: string
+    kind: "image" | "video"
+    src: string
+  }[]
+  componentFileName: string
+  componentName: string
+  configFileName: string
   isCopying: boolean
   issues: { layerId?: string; message: string }[]
   onCopy: () => Promise<void>
+  onComponentNameChange: (value: string) => void
+  onDownloadComponent: () => void
+  onDownloadConfig: () => void
+  onDownloadReadme: () => void
   snippet: string | null
 }) {
   const canCopy = Boolean(snippet) && issues.length === 0
@@ -980,6 +1109,44 @@ function ShaderTabContent({
         Install with <code className="rounded-[6px] border border-white/9 bg-white/6 px-[5px] py-px font-[var(--ds-font-mono)] text-[11px]">bun add @shader-lab/react</code>,
         then paste this component into your React app.
       </Typography>
+
+      <FieldLabel label="Component name">
+        <input
+          className="min-h-9 rounded-[var(--ds-radius-control)] border border-[var(--ds-border-divider)] bg-[var(--ds-color-surface-control)] px-[10px] py-2 font-[var(--ds-font-mono)] text-[12px] leading-4 text-[var(--ds-color-text-primary)]"
+          onChange={(event) => onComponentNameChange(event.currentTarget.value)}
+          placeholder="ExportedShader"
+          type="text"
+          value={componentName}
+        />
+      </FieldLabel>
+
+      <div className="grid gap-[10px] min-[900px]:grid-cols-2">
+        <div className="rounded-[var(--ds-radius-panel)] border border-[var(--ds-border-divider)] bg-white/4 p-3">
+          <Typography tone="secondary" variant="overline">
+            Files
+          </Typography>
+          <Typography className="mt-2 font-[var(--ds-font-mono)] text-[11px] leading-[1.55]" variant="caption">
+            {componentFileName}
+            <br />
+            {configFileName}
+            <br />
+            README.md
+          </Typography>
+        </div>
+
+        <div className="rounded-[var(--ds-radius-panel)] border border-[var(--ds-border-divider)] bg-white/4 p-3">
+          <Typography tone="secondary" variant="overline">
+            Asset placeholders
+          </Typography>
+          <Typography className="mt-2 font-[var(--ds-font-mono)] text-[11px] leading-[1.55]" variant="caption">
+            {assetPlaceholders.length > 0
+              ? assetPlaceholders
+                  .map((asset) => `${asset.kind}: ${asset.src}`)
+                  .join("\n")
+              : "No external image or video assets"}
+          </Typography>
+        </div>
+      </div>
 
       {issues.length > 0 ? (
         <div className="flex flex-col gap-2 rounded-[var(--ds-radius-panel)] border border-[rgb(255_74_74_/_0.14)] bg-[rgb(255_74_74_/_0.06)] p-3">
@@ -1001,6 +1168,25 @@ function ShaderTabContent({
         <CopyIcon size={16} weight="bold" />
         {isCopying ? "Copying..." : "Copy snippet"}
       </Button>
+
+      <div className="grid gap-[10px] min-[900px]:grid-cols-3">
+        <Button
+          disabled={!canCopy}
+          onClick={onDownloadComponent}
+          variant="neutral"
+        >
+          <FileArrowDownIcon size={16} weight="bold" />
+          Download component
+        </Button>
+        <Button disabled={!canCopy} onClick={onDownloadConfig} variant="neutral">
+          <FileArrowDownIcon size={16} weight="bold" />
+          Download config
+        </Button>
+        <Button disabled={!canCopy} onClick={onDownloadReadme} variant="neutral">
+          <FileArrowDownIcon size={16} weight="bold" />
+          Download README
+        </Button>
+      </div>
     </section>
   )
 }

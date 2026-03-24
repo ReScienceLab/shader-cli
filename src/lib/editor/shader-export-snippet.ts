@@ -6,7 +6,7 @@ export function generateShaderExportSnippet(
   config: ShaderLabConfig,
   componentName = DEFAULT_COMPONENT_NAME,
 ): string {
-  const safeComponentName = sanitizeComponentName(componentName)
+  const safeComponentName = sanitizeShaderExportComponentName(componentName)
   const serializedConfig = JSON.stringify(config, null, 2)
 
   return [
@@ -21,7 +21,7 @@ export function generateShaderExportSnippet(
   ].join("\n")
 }
 
-function sanitizeComponentName(input: string): string {
+export function sanitizeShaderExportComponentName(input: string): string {
   const collapsed = input.replace(/[^a-zA-Z0-9]+/g, " ").trim()
   const parts = collapsed.length > 0 ? collapsed.split(/\s+/) : [DEFAULT_COMPONENT_NAME]
   const candidate = parts
