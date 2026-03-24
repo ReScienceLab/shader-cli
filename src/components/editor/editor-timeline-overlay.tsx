@@ -37,7 +37,6 @@ import {
   createLayerPropertyBinding,
   createParamBinding,
 } from "@/store/timeline-store"
-import s from "./editor-timeline-overlay.module.css"
 
 type TimelinePropertyItem = {
   binding: AnimatedPropertyBinding
@@ -272,14 +271,14 @@ function TimelineTransport({
   return (
     <div
       className={cn(
-        s.transport,
-        expanded ? s.transportExpanded : s.transportCompact
+        "flex w-full items-center gap-2",
+        expanded ? "min-h-[31px]" : "min-h-7"
       )}
     >
-      <div className={s.controlGroup}>
+      <div className="inline-flex items-center gap-1">
         <IconButton
           aria-label={isPlaying ? "Pause playback" : "Play timeline"}
-          className={s.transportButton}
+          className="h-7 w-7"
           onClick={onTogglePlaying}
           variant="default"
         >
@@ -291,7 +290,7 @@ function TimelineTransport({
         </IconButton>
         <IconButton
           aria-label="Stop playback"
-          className={s.transportButton}
+          className="h-7 w-7"
           onClick={onStop}
           variant="default"
         >
@@ -299,15 +298,17 @@ function TimelineTransport({
         </IconButton>
       </div>
 
-      <span aria-hidden="true" className={s.divider} />
+      <span
+        aria-hidden="true"
+        className="block h-4 w-px shrink-0 rounded-full bg-[var(--ds-border-divider)]"
+      />
 
-      <div className={s.controlGroup}>
+      <div className="inline-flex items-center gap-1">
         <IconButton
           aria-label={loop ? "Disable loop" : "Enable loop"}
           className={cn(
-            s.transportButton,
-            s.loopButton,
-            loop && s.transportButtonActive
+            "h-7 w-auto gap-1.5 px-[10px]",
+            loop && "bg-white/12 text-[var(--ds-color-text-primary)]"
           )}
           onClick={onToggleLoop}
           variant={loop ? "active" : "default"}
@@ -318,15 +319,18 @@ function TimelineTransport({
         </IconButton>
       </div>
 
-      <span aria-hidden="true" className={s.divider} />
+      <span
+        aria-hidden="true"
+        className="block h-4 w-px shrink-0 rounded-full bg-[var(--ds-border-divider)]"
+      />
 
-      <div className={s.durationGroup}>
+      <div className="inline-flex items-center gap-2">
         <Typography as="span" tone="secondary" variant="monoSm">
           Duration
         </Typography>
         <input
           aria-label="Timeline duration in seconds"
-          className={s.durationInput}
+          className="min-h-7 w-[72px] appearance-none rounded-[var(--ds-radius-icon)] border border-[var(--ds-border-divider)] bg-[var(--ds-color-surface-control)] px-[10px] text-center font-[var(--ds-font-mono)] text-[12px] leading-4 text-[var(--ds-color-text-primary)] outline-none transition-[background-color,border-color] duration-160 ease-[var(--ease-out-cubic)] focus:border-[var(--ds-border-hover)]"
           max={120}
           min={0.25}
           onChange={(event) => {
@@ -342,7 +346,7 @@ function TimelineTransport({
         />
         <Typography
           as="span"
-          className={s.durationSuffix}
+          className="whitespace-nowrap"
           tone="secondary"
           variant="monoSm"
         >
@@ -350,10 +354,10 @@ function TimelineTransport({
         </Typography>
       </div>
 
-      <div className={s.statusGroup}>
+      <div className="inline-flex min-w-0 flex-1 items-center justify-end gap-1">
         <Typography
           as="span"
-          className={s.timeReadout}
+          className="min-w-[104px] whitespace-nowrap text-right"
           tone="secondary"
           variant="monoMd"
         >
@@ -363,7 +367,7 @@ function TimelineTransport({
           aria-label={
             expanded ? "Collapse timeline panel" : "Expand timeline panel"
           }
-          className={s.transportButton}
+          className="h-7 w-7"
           onClick={onToggleExpanded}
           variant="default"
         >
@@ -617,14 +621,14 @@ export function EditorTimelineOverlay() {
   }
 
   return (
-    <div className={s.root}>
+    <div className="pointer-events-none fixed right-0 bottom-3 left-0 z-35 flex justify-center">
       <motion.div
         animate={
           reduceMotion
             ? { height: shellHeight, opacity: 1, width: shellWidth }
             : { height: shellHeight, opacity: 1, width: shellWidth, y: 0 }
         }
-        className={s.panelWrap}
+        className="pointer-events-auto mx-auto max-h-[min(380px,calc(100vh-268px))] origin-bottom"
         initial={false}
         transition={
           reduceMotion
@@ -637,11 +641,14 @@ export function EditorTimelineOverlay() {
               }
         }
       >
-        <GlassPanel className={s.panel} variant="panel">
+        <GlassPanel
+          className="pointer-events-auto flex h-full max-h-inherit w-full flex-col overflow-hidden"
+          variant="panel"
+        >
           <div
             className={cn(
-              s.panelHeader,
-              !timelinePanelOpen && s.panelHeaderCollapsed
+              "border-b border-[var(--ds-border-divider)] p-2 transition-[border-color] duration-160 ease-[var(--ease-out-cubic)]",
+              !timelinePanelOpen && "border-b-transparent"
             )}
           >
             <TimelineTransport
@@ -660,7 +667,7 @@ export function EditorTimelineOverlay() {
 
           <motion.div
             animate={panelBodyAnimation}
-            className={s.panelBodyMotion}
+            className="flex min-h-0 flex-1 overflow-hidden"
             initial={false}
             transition={
               reduceMotion
@@ -677,21 +684,21 @@ export function EditorTimelineOverlay() {
             <div
               aria-hidden={!timelinePanelOpen}
               className={cn(
-                s.panelBody,
-                !timelinePanelOpen && s.panelBodyHidden
+                "flex h-full min-h-0 flex-1 overflow-hidden",
+                !timelinePanelOpen && "pointer-events-none"
               )}
             >
-              <div className={s.panelSidebar}>
-                <div className={s.panelSection}>
+              <div className="flex h-full min-h-0 shrink-0 basis-[180px] flex-col gap-4 overflow-y-auto border-r border-[var(--ds-border-divider)] px-3 pt-[10px] pb-3 [scrollbar-gutter:stable]">
+                <div className="flex flex-col gap-[10px]">
                   <Typography
-                    className={s.sectionTitle}
+                    className="tracking-[0.08em] uppercase"
                     tone="secondary"
                     variant="overline"
                   >
                     Properties
                   </Typography>
 
-                  <div className={s.propertyList}>
+                  <div className="flex flex-col gap-1.5">
                     {properties.length > 0 ? (
                       properties.map((entry) => {
                         const isFocused = focusedPropertyId === entry.id
@@ -700,11 +707,11 @@ export function EditorTimelineOverlay() {
                         return (
                           <button
                             className={cn(
-                              s.propertyRow,
-                              isFocused && s.propertyRowActive,
+                              "flex min-h-8 items-center gap-[10px] rounded-[10px] border border-transparent px-[10px] text-left transition-[background-color,border-color,color,transform] duration-160 ease-[var(--ease-out-cubic)] hover:bg-white/4 hover:border-white/5 active:scale-[0.995]",
+                              isFocused && "border-white/8 bg-white/8",
                               hasTrack
-                                ? s.propertyRowAnimated
-                                : s.propertyRowInactive
+                                ? "text-[var(--ds-color-text-primary)]"
+                                : "text-[var(--ds-color-text-muted)]"
                             )}
                             key={entry.id}
                             onClick={() => {
@@ -718,15 +725,15 @@ export function EditorTimelineOverlay() {
                             }}
                             type="button"
                           >
-                            <div className={s.propertyMeta}>
+                            <div className="flex min-w-0 items-center gap-2">
                               <span
                                 aria-hidden="true"
-                                className={s.propertySwatch}
+                                className="h-2 w-2 shrink-0 rounded-full shadow-[0_0_0_1px_rgb(255_255_255_/_0.08)]"
                                 style={{ backgroundColor: entry.color }}
                               />
                               <Typography
                                 as="span"
-                                className={s.propertyLabel}
+                                className="min-w-0"
                                 tone={hasTrack ? "primary" : "muted"}
                                 variant="monoSm"
                               >
@@ -735,11 +742,12 @@ export function EditorTimelineOverlay() {
                             </div>
                             <span
                               aria-hidden="true"
-                              className={
+                              className={cn(
+                                "inline-flex h-[7px] w-[7px] shrink-0 rounded-full",
                                 hasTrack
-                                  ? s.propertyIndicator
-                                  : s.propertyIndicatorMuted
-                              }
+                                  ? "bg-[rgb(var(--timeline-track-rgb,122_162_255)_/_0.9)] shadow-[0_0_10px_rgb(var(--timeline-track-rgb,122_162_255)_/_0.35)]"
+                                  : "bg-white/14"
+                              )}
                               style={
                                 hasTrack
                                   ? ({
@@ -762,17 +770,17 @@ export function EditorTimelineOverlay() {
                 </div>
               </div>
 
-              <div className={s.timelinePane}>
+              <div className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
                 <div
-                  className={s.scrubSurface}
+                  className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
                   onPointerDown={handleScrubStart}
                   ref={scrubSurfaceRef}
                 >
-                  <div className={s.ruler}>
+                  <div className="relative basis-[30px] border-b border-[var(--ds-border-divider)]">
                     {tickPositions.minorTicks.map((tick) => (
                       <span
                         aria-hidden="true"
-                        className={s.tickMinor}
+                        className="absolute bottom-0 w-px bg-white/6 h-[10px]"
                         key={`minor-${tick}`}
                         style={{ left: `${(tick / duration) * 100}%` }}
                       />
@@ -781,7 +789,7 @@ export function EditorTimelineOverlay() {
                     {tickPositions.majorTicks.map((tick) => (
                       <span
                         aria-hidden="true"
-                        className={s.tickMajor}
+                        className="absolute bottom-0 h-[18px] w-px bg-white/14"
                         key={`major-${tick}`}
                         style={{ left: `${(tick / duration) * 100}%` }}
                       />
@@ -790,7 +798,7 @@ export function EditorTimelineOverlay() {
                     {tickPositions.majorTicks.map((tick) => (
                       <Typography
                         as="span"
-                        className={s.tickLabel}
+                        className="absolute top-1 left-0 -translate-x-1/2 whitespace-nowrap"
                         key={`label-${tick}`}
                         tone="muted"
                         variant="monoXs"
@@ -801,7 +809,7 @@ export function EditorTimelineOverlay() {
                     ))}
                   </div>
 
-                  <div className={s.lanes}>
+                  <div className="relative flex min-h-0 flex-1 flex-col overflow-y-auto">
                     {animatedProperties.length > 0 ? (
                       animatedProperties.map((entry) => {
                         const track = entry.track
@@ -814,7 +822,11 @@ export function EditorTimelineOverlay() {
 
                         return (
                           <div
-                            className={cn(s.lane, isFocused && s.laneActive)}
+                            className={cn(
+                              "relative basis-[46px] border-b border-white/4 bg-[linear-gradient(90deg,rgb(255_255_255_/_0.02)_0%,rgb(255_255_255_/_0.015)_100%)]",
+                              isFocused &&
+                                "bg-[linear-gradient(90deg,rgb(var(--timeline-track-rgb,122_162_255)_/_0.12)_0%,rgb(var(--timeline-track-rgb,122_162_255)_/_0.03)_42%,rgb(255_255_255_/_0.02)_100%)]"
+                            )}
                             key={track.id}
                             style={
                               {
@@ -826,18 +838,15 @@ export function EditorTimelineOverlay() {
                           >
                             <div
                               className={cn(
-                                s.laneRail,
-                                !track.enabled && s.laneRailDisabled
+                                "absolute top-[22px] right-0 left-0 h-0.5 rounded-full bg-[rgb(var(--timeline-track-rgb,122_162_255)_/_0.18)]",
+                                !track.enabled && "opacity-40"
                               )}
                             />
                             {track.keyframes.map((keyframe) => (
                               <button
                                 aria-label={`Keyframe at ${formatSeconds(keyframe.time)}`}
-                                className={cn(
-                                  s.laneKeyframe,
-                                  selectedKeyframeId === keyframe.id &&
-                                    s.laneKeyframeSelected
-                                )}
+                                className="group absolute top-[11px] inline-flex h-[22px] w-[22px] -translate-x-1/2 items-center justify-center bg-transparent p-0 text-inherit cursor-grab active:cursor-grabbing"
+                                data-selected={selectedKeyframeId === keyframe.id}
                                 key={keyframe.id}
                                 onPointerDown={(event) => {
                                   event.preventDefault()
@@ -857,7 +866,11 @@ export function EditorTimelineOverlay() {
                               >
                                 <span
                                   aria-hidden="true"
-                                  className={s.laneKeyframeShape}
+                                  className={cn(
+                                    "h-[11px] w-[11px] rounded-[4px] border border-white/40 bg-[rgb(var(--timeline-track-rgb,122_162_255)_/_0.95)] shadow-[0_4px_10px_rgb(0_0_0_/_0.22)] rotate-45 transition-[box-shadow,transform] duration-160 ease-[var(--ease-out-cubic)] group-hover:shadow-[0_0_0_1px_rgb(255_255_255_/_0.24),0_6px_14px_rgb(0_0_0_/_0.28)]",
+                                    selectedKeyframeId === keyframe.id &&
+                                      "bg-[rgb(var(--timeline-track-rgb,122_162_255)_/_1)] scale-[1.12]"
+                                  )}
                                 />
                               </button>
                             ))}
@@ -865,8 +878,8 @@ export function EditorTimelineOverlay() {
                         )
                       })
                     ) : (
-                      <div className={s.emptySurface}>
-                        <div className={s.emptyCard}>
+                      <div className="pointer-events-none absolute inset-x-0 top-[30px] flex items-start justify-center">
+                        <div className="flex max-w-[320px] flex-col gap-1.5 px-[18px] py-4 text-center">
                           <Typography
                             align="center"
                             variant="caption"
@@ -879,19 +892,22 @@ export function EditorTimelineOverlay() {
                     )}
 
                     <div
-                      className={s.playhead}
+                      className="pointer-events-none absolute top-0 bottom-0 w-0 -translate-x-1/2"
                       style={{ left: `${progress * 100}%` }}
                     >
                       <div
                         aria-hidden="true"
-                        className={s.playheadHandle}
+                        className="pointer-events-auto absolute top-0 left-1/2 h-[14px] w-[14px] -translate-x-1/2 rounded-[4px] bg-white/96 shadow-[0_8px_18px_rgb(0_0_0_/_0.28)]"
                         onPointerDown={(event) => {
                           event.preventDefault()
                           event.stopPropagation()
                           setDragState({ type: "playhead" })
                         }}
                       />
-                      <div aria-hidden="true" className={s.playheadLine} />
+                      <div
+                        aria-hidden="true"
+                        className="absolute top-3 bottom-0 left-1/2 w-px -translate-x-1/2 bg-[linear-gradient(180deg,rgb(255_255_255_/_0.95)_0%,rgb(255_255_255_/_0.62)_100%)]"
+                      />
                     </div>
                   </div>
 
@@ -899,7 +915,7 @@ export function EditorTimelineOverlay() {
 
                 {selectedTrack ? (
                   <div
-                    className={s.floatingEasing}
+                    className="pointer-events-auto absolute right-3 bottom-3 z-4 inline-flex"
                     onPointerDown={(event) => {
                       event.stopPropagation()
                     }}
@@ -919,7 +935,7 @@ export function EditorTimelineOverlay() {
                     >
                       <BaseSelect.Trigger
                         aria-label="Track easing"
-                        className={s.easingTrigger}
+                        className="inline-flex h-7 w-7 items-center justify-center rounded-[var(--ds-radius-icon)] border border-[var(--ds-border-divider)] bg-[var(--ds-color-surface-control)] text-[var(--ds-color-text-secondary)] transition-[background-color,border-color,color,transform] duration-160 ease-[var(--ease-out-cubic)] hover:bg-white/8 hover:border-[var(--ds-border-hover)] active:scale-[0.96] data-[popup-open]:bg-white/8 data-[popup-open]:border-[var(--ds-border-hover)] data-[popup-open]:text-[var(--ds-color-text-primary)] focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-2 focus-visible:outline-[var(--ds-border-active)]"
                         onPointerDown={(event) => {
                           event.stopPropagation()
                         }}
@@ -931,20 +947,20 @@ export function EditorTimelineOverlay() {
                         <BaseSelect.Positioner
                           align="end"
                           alignItemWithTrigger={false}
-                          className={s.easingPositioner}
+                          className="z-50 outline-none"
                           side="top"
                           sideOffset={10}
                         >
-                          <BaseSelect.Popup className={s.easingPopup}>
-                            <BaseSelect.List className={s.easingList}>
+                          <BaseSelect.Popup className="min-w-[132px] overflow-hidden rounded-[12px] border border-[var(--ds-border-panel)] bg-[rgb(18_18_22_/_0.82)] shadow-[var(--ds-shadow-panel-dark)] backdrop-blur-[24px]">
+                            <BaseSelect.List className="flex flex-col gap-0.5 p-1">
                               {INTERPOLATION_OPTIONS.map((option) => (
                                 <BaseSelect.Item
-                                  className={s.easingItem}
+                                  className="cursor-pointer rounded-[var(--ds-radius-icon)] px-[10px] py-[6px] text-[var(--ds-color-text-secondary)] outline-none transition-[background-color,color] duration-140 ease-[var(--ease-out-cubic)] data-[highlighted]:bg-[var(--ds-color-surface-active)] data-[selected]:bg-[var(--ds-color-surface-active)] data-[highlighted]:text-[var(--ds-color-text-primary)] data-[selected]:text-[var(--ds-color-text-primary)]"
                                   key={option.value}
                                   value={option.value}
                                 >
                                   <BaseSelect.ItemText
-                                    className={s.easingItemText}
+                                    className="block font-[var(--ds-font-mono)] text-[11px] leading-[14px]"
                                   >
                                     {option.label}
                                   </BaseSelect.ItemText>
