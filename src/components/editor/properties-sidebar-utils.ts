@@ -125,6 +125,10 @@ export function isParamVisible(
     return controllingValue === definition.visibleWhen.equals
   }
 
+  if ("notEquals" in definition.visibleWhen) {
+    return controllingValue !== definition.visibleWhen.notEquals
+  }
+
   return (
     typeof controllingValue === "number" &&
     controllingValue >= definition.visibleWhen.gte

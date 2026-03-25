@@ -1141,8 +1141,8 @@ const modelParams = [
     label: "Base Color",
     type: "color",
     visibleWhen: {
-      equals: "custom",
-      key: "materialMode",
+      key: "materialPreset",
+      notEquals: "liquid",
     },
   },
   {
@@ -1155,8 +1155,8 @@ const modelParams = [
     step: 0.01,
     type: "number",
     visibleWhen: {
-      equals: "custom",
-      key: "materialMode",
+      key: "materialPreset",
+      notEquals: "liquid",
     },
   },
   {
@@ -1169,8 +1169,8 @@ const modelParams = [
     step: 0.01,
     type: "number",
     visibleWhen: {
-      equals: "custom",
-      key: "materialMode",
+      key: "materialPreset",
+      notEquals: "liquid",
     },
   },
   {
@@ -1183,8 +1183,8 @@ const modelParams = [
     step: 0.01,
     type: "number",
     visibleWhen: {
-      equals: "custom",
-      key: "materialMode",
+      key: "materialPreset",
+      notEquals: "liquid",
     },
   },
   {
@@ -1197,8 +1197,8 @@ const modelParams = [
     step: 0.01,
     type: "number",
     visibleWhen: {
-      equals: "custom",
-      key: "materialMode",
+      key: "materialPreset",
+      notEquals: "liquid",
     },
   },
   {

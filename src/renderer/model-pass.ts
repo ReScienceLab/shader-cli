@@ -1,8 +1,19 @@
-import * as THREE from "three/webgpu"
-import { float, texture as tslTexture, type TSLNode, uniform, uv, vec2 } from "three/tsl"
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js"
 import { HDRLoader } from "three/examples/jsm/loaders/HDRLoader.js"
 import { clone as cloneSkeleton } from "three/examples/jsm/utils/SkeletonUtils.js"
+import {
+  float,
+  type TSLNode,
+  texture as tslTexture,
+  uniform,
+  uv,
+  vec2,
+} from "three/tsl"
+import * as THREE from "three/webgpu"
+import {
+  MODEL_LAYER_SUPPORTED_MODEL_EXTENSIONS,
+  MODEL_LAYER_SUPPORTED_MODEL_MIME_TYPES,
+} from "@/lib/editor/model-layer/shared"
 import type { RenderableLayerPass } from "@/renderer/contracts"
 import {
   buildCustomModelMaterial,
@@ -13,10 +24,6 @@ import { buildSvgBadgeGeometry } from "@/renderer/model-svg"
 import { PassNode } from "@/renderer/pass-node"
 import { useLayerStore } from "@/store/layer-store"
 import type { LayerParameterValues } from "@/types/editor"
-import {
-  MODEL_LAYER_SUPPORTED_MODEL_EXTENSIONS,
-  MODEL_LAYER_SUPPORTED_MODEL_MIME_TYPES,
-} from "@/lib/editor/model-layer/shared"
 
 type Node = TSLNode
 type BackgroundMode = "solid" | "transparent"
@@ -182,7 +189,10 @@ function disposeNode(root: THREE.Object3D): void {
   })
 }
 
-function assignCustomMaterial(mesh: THREE.Mesh, materialFactory: () => THREE.Material): void {
+function assignCustomMaterial(
+  mesh: THREE.Mesh,
+  materialFactory: () => THREE.Material
+): void {
   if (Array.isArray(mesh.material)) {
     for (const material of mesh.material) {
       material.dispose()
@@ -283,7 +293,8 @@ export class ModelPass extends PassNode {
     )
     this.currentContinuousRender =
       params.autoRotate === true ||
-      (typeof params.floatAmplitude === "number" && params.floatAmplitude > 0) ||
+      (typeof params.floatAmplitude === "number" &&
+        params.floatAmplitude > 0) ||
       normalizeMaterialPreset(params.materialPreset) === "liquid"
     this.currentEnvironmentStrength =
       typeof params.environmentStrength === "number"
@@ -594,7 +605,9 @@ export class ModelPass extends PassNode {
   }
 
   private buildMaterial(): THREE.Material {
-    const preset = normalizeMaterialPreset(this.currentModelParams.materialPreset)
+    const preset = normalizeMaterialPreset(
+      this.currentModelParams.materialPreset
+    )
     return buildCustomModelMaterial(
       preset,
       this.buildMaterialState(),
@@ -609,7 +622,6 @@ export class ModelPass extends PassNode {
         : "studio"
     const strength = this.currentEnvironmentStrength
 
-    // Scale direct lights based on strength — they supplement the HDRI
     switch (preset) {
       case "sunset":
         this.hemiLight.color.set("#ffd6b0")
@@ -657,7 +669,6 @@ export class ModelPass extends PassNode {
         break
     }
 
-    // Mark that we need to load this HDRI (actual loading happens in render when we have the renderer)
     if (preset !== this.currentHdriPreset) {
       this.currentHdriPreset = preset
     }
@@ -671,7 +682,6 @@ export class ModelPass extends PassNode {
     const fileName = HDRI_PRESET_FILES[preset] ?? HDRI_PRESET_FILES.studio!
     const url = `${HDRI_CDN_BASE}${fileName}`
 
-    // Check cache first
     const cached = hdriCache.get(url)
     if (cached) {
       this.perspScene.environment = cached
@@ -679,22 +689,27 @@ export class ModelPass extends PassNode {
       return
     }
 
-    void hdrLoader.loadAsync(url).then((hdrTexture) => {
-      const pmremGenerator = new THREE.PMREMGenerator(renderer as unknown as THREE.WebGLRenderer)
-      const envMap = pmremGenerator.fromEquirectangular(hdrTexture).texture
-      hdrTexture.dispose()
-      pmremGenerator.dispose()
+    void hdrLoader
+      .loadAsync(url)
+      .then((hdrTexture) => {
+        const pmremGenerator = new THREE.PMREMGenerator(
+          renderer as unknown as THREE.WebGLRenderer
+        )
+        const envMap = pmremGenerator.fromEquirectangular(hdrTexture).texture
+        hdrTexture.dispose()
+        pmremGenerator.dispose()
 
-      hdriCache.set(url, envMap)
-      this.perspScene.environment = envMap
-      this.perspScene.environmentIntensity = this.currentEnvironmentStrength
-    }).catch((err) => {
-      console.warn("Failed to load HDRI environment:", err)
-    })
+        hdriCache.set(url, envMap)
+        this.perspScene.environment = envMap
+        this.perspScene.environmentIntensity = this.currentEnvironmentStrength
+      })
+      .catch((err) => {
+        console.warn("Failed to load HDRI environment:", err)
+      })
   }
 
   private applyMaterialState(): void {
-    if (!this.activeObject || !this.shouldUseCustomMaterials()) {
+    if (!(this.activeObject && this.shouldUseCustomMaterials())) {
       return
     }
 
@@ -800,12 +815,12 @@ export class ModelPass extends PassNode {
       typeof this.currentModelParams.activeAnimation === "string"
         ? this.currentModelParams.activeAnimation
         : ""
-    const nextActive =
-      names.length === 0
-        ? ""
-        : names.includes(currentActive)
-          ? currentActive
-          : (names[0] ?? "")
+    let nextActive = ""
+    if (names.length > 0) {
+      nextActive = names.includes(currentActive)
+        ? currentActive
+        : (names[0] ?? "")
+    }
 
     if (currentNames !== serializedNames) {
       layerStore.updateLayerParam(
@@ -861,7 +876,7 @@ export class ModelPass extends PassNode {
     action.paused = !playing
     action.setLoop(
       looping ? THREE.LoopRepeat : THREE.LoopOnce,
-      looping ? Infinity : 1
+      looping ? Number.POSITIVE_INFINITY : 1
     )
     action.timeScale = speed
     action.reset().play()

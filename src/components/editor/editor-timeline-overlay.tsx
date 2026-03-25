@@ -132,6 +132,10 @@ function getVisibleParams(layer: EditorLayer): ParameterDefinition[] {
       return controllingValue === entry.visibleWhen.equals
     }
 
+    if ("notEquals" in entry.visibleWhen) {
+      return controllingValue !== entry.visibleWhen.notEquals
+    }
+
     return (
       typeof controllingValue === "number" &&
       controllingValue >= entry.visibleWhen.gte

@@ -283,7 +283,7 @@ describe("CRT layer registry", () => {
     expect(params.environment).toBe("studio")
     expect(params.materialMode).toBe("custom")
     expect(params.materialPreset).toBe("metal")
-    expect(params.materialColor).toBe("#c9a24f")
+    expect(params.materialColor).toBe("#FAFAFA")
     expect(params.badgeThickness).toBe(0.18)
     expect(svgSource).not.toBeUndefined()
     expect(badgeThickness).not.toBeUndefined()
