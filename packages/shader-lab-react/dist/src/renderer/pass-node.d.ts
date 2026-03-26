@@ -1,6 +1,6 @@
 import * as THREE from "three/webgpu";
 import { type TSLNode } from "three/tsl";
-import type { LayerCompositeMode, LayerParameterValues } from "@/types/editor";
+import type { LayerCompositeMode, LayerParameterValues } from "../types/editor";
 type Node = TSLNode;
 export declare class PassNode {
     readonly layerId: string;

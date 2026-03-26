@@ -18,18 +18,18 @@ import {
   vec3,
   vec4,
 } from "three/tsl"
-import { PassNode } from "@/renderer/pass-node"
+import { PassNode } from "./pass-node"
 import {
   acesTonemap,
   cinematicTonemap,
   reinhardTonemap,
   totosTonemap,
-} from "@/renderer/shaders/tsl/color/tonemapping"
-import { perlinNoise3d } from "@/renderer/shaders/tsl/noise/perlin-noise-3d"
-import { simplexNoise3d } from "@/renderer/shaders/tsl/noise/simplex-noise-3d"
-import { turbulence } from "@/renderer/shaders/tsl/noise/turbulence"
-import { grainTexturePattern } from "@/renderer/shaders/tsl/patterns/grain-texture-pattern"
-import type { LayerParameterValues } from "@/types/editor"
+} from "./shaders/tsl/color/tonemapping"
+import { perlinNoise3d } from "./shaders/tsl/noise/perlin-noise-3d"
+import { simplexNoise3d } from "./shaders/tsl/noise/simplex-noise-3d"
+import { turbulence } from "./shaders/tsl/noise/turbulence"
+import { grainTexturePattern } from "./shaders/tsl/patterns/grain-texture-pattern"
+import type { LayerParameterValues } from "../types/editor"
 
 type Node = TSLNode
 type NoiseMode = "perlin" | "simplex" | "turbulence"

@@ -1,6 +1,6 @@
 import { type TSLNode } from "three/tsl";
-import { PassNode } from "@/renderer/pass-node";
-import type { LayerParameterValues } from "@/types/editor";
+import { PassNode } from "./pass-node";
+import type { LayerParameterValues } from "../types/editor";
 type Node = TSLNode;
 export declare class CustomShaderPass extends PassNode {
     private readonly onRuntimeError;

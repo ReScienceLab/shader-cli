@@ -1,6 +1,7 @@
-import { Fn, float } from "three/tsl"
-import { smin } from "@/renderer/shaders/tsl/utils/smin"
+// @ts-nocheck
+import { abs, Fn, float, max } from "three/tsl"
 
 export const smax = Fn(([left, right, factor = float(0)]) => {
-  return smin(left, right, factor.negate())
+  const h = max(factor.sub(abs(left.sub(right))), 0).div(factor)
+  return max(left, right).add(h.mul(h).mul(factor).mul(0.25))
 })

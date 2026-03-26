@@ -13,9 +13,9 @@ import {
   vec2,
   vec4,
 } from "three/tsl"
-import { loadImageTexture, createVideoTexture, type VideoHandle } from "@/renderer/media-texture"
-import { PassNode } from "@/renderer/pass-node"
-import type { LayerParameterValues } from "@/types/editor"
+import { loadImageTexture, createVideoTexture, type VideoHandle } from "./media-texture"
+import { PassNode } from "./pass-node"
+import type { LayerParameterValues } from "../types/editor"
 
 type MediaKind = "image" | "video"
 type Node = TSLNode

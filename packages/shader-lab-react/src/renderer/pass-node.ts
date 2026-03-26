@@ -14,8 +14,8 @@ import {
   vec3,
   vec4,
 } from "three/tsl"
-import { buildBlendNode } from "@/renderer/blend-modes"
-import type { LayerCompositeMode, LayerParameterValues } from "@/types/editor"
+import { buildBlendNode } from "./blend-modes"
+import type { LayerCompositeMode, LayerParameterValues } from "../types/editor"
 
 type Node = TSLNode
 
