@@ -2,4 +2,4 @@
 "@basementstudio/shader-lab": patch
 ---
 
-readme
+fix workflow
