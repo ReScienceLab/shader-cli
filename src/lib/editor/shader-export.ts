@@ -1,8 +1,8 @@
 import type {
   ShaderLabAssetSource,
   ShaderLabBlendMode,
-  ShaderLabConfig,
   ShaderLabCompositeMode,
+  ShaderLabConfig,
   ShaderLabLayerConfig,
   ShaderLabLayerKind,
   ShaderLabLayerType,
@@ -82,7 +82,7 @@ export interface BuildShaderExportConfigInput {
 
 export function validateShaderExportSupport(
   layers: EditorLayer[],
-  assets: EditorAsset[] = [],
+  assets: EditorAsset[] = []
 ): ShaderExportValidationIssue[] {
   const issues: ShaderExportValidationIssue[] = []
   const assetById = new Map(assets.map((asset) => [asset.id, asset]))
@@ -123,7 +123,8 @@ export function validateShaderExportSupport(
 
     if (
       layer.type === "custom-shader" &&
-      (typeof layer.params.sourceCode !== "string" || !layer.params.sourceCode.trim())
+      (typeof layer.params.sourceCode !== "string" ||
+        !layer.params.sourceCode.trim())
     ) {
       issues.push({
         layerId: layer.id,
@@ -136,7 +137,7 @@ export function validateShaderExportSupport(
 }
 
 export function buildShaderExportConfig(
-  input: BuildShaderExportConfigInput,
+  input: BuildShaderExportConfigInput
 ): ShaderLabConfig {
   const issues = validateShaderExportSupport(input.layers, input.assets)
 
@@ -152,23 +153,30 @@ export function buildShaderExportConfig(
       width: input.composition.width,
     },
     layers: input.layers.map((layer) =>
-      toShaderLabLayerConfig(layer, layer.assetId ? assetById.get(layer.assetId) ?? null : null),
+      toShaderLabLayerConfig(
+        layer,
+        layer.assetId ? (assetById.get(layer.assetId) ?? null) : null
+      )
     ),
     timeline: {
       duration: input.timeline.duration,
       loop: input.timeline.loop,
-      tracks: structuredClone(input.timeline.tracks) as ShaderLabTimelineTrack[],
+      tracks: structuredClone(
+        input.timeline.tracks
+      ) as ShaderLabTimelineTrack[],
     },
   }
 }
 
 function toShaderLabLayerConfig(
   layer: EditorLayer,
-  asset: EditorAsset | null,
+  asset: EditorAsset | null
 ): ShaderLabLayerConfig {
   const supportedLayer = assertSupportedShaderExportLayer(layer)
   const sketch =
-    supportedLayer.type === "custom-shader" ? getSketchSource(supportedLayer) : undefined
+    supportedLayer.type === "custom-shader"
+      ? getSketchSource(supportedLayer)
+      : undefined
   const assetSource = toShaderLabAssetSource(supportedLayer, asset)
   const baseLayer: ShaderLabLayerConfig = {
     blendMode: supportedLayer.blendMode as ShaderLabBlendMode,
@@ -195,16 +203,19 @@ function toShaderLabLayerConfig(
   return baseLayer
 }
 
-function assertSupportedShaderExportLayer(layer: EditorLayer): SupportedShaderExportLayer {
-  if (
-    layer.kind !== "effect" &&
-    layer.kind !== "source"
-  ) {
-    throw new Error(`Layer "${layer.name}" uses unsupported kind "${layer.kind}".`)
+function assertSupportedShaderExportLayer(
+  layer: EditorLayer
+): SupportedShaderExportLayer {
+  if (layer.kind !== "effect" && layer.kind !== "source") {
+    throw new Error(
+      `Layer "${layer.name}" uses unsupported kind "${layer.kind}".`
+    )
   }
 
   if (!SUPPORTED_SHADER_EXPORT_LAYER_TYPES.has(layer.type)) {
-    throw new Error(`Layer "${layer.name}" uses unsupported type "${layer.type}".`)
+    throw new Error(
+      `Layer "${layer.name}" uses unsupported type "${layer.type}".`
+    )
   }
 
   return layer as SupportedShaderExportLayer
@@ -212,7 +223,7 @@ function assertSupportedShaderExportLayer(layer: EditorLayer): SupportedShaderEx
 
 function toShaderLabAssetSource(
   layer: EditorLayer,
-  asset: EditorAsset | null,
+  asset: EditorAsset | null
 ): ShaderLabAssetSource | undefined {
   if (layer.type === "image") {
     const fileName = asset?.fileName || "image.png"
@@ -237,7 +248,9 @@ function toShaderLabAssetSource(
   return undefined
 }
 
-function getSketchSource(layer: EditorLayer): ShaderLabSketchSource | undefined {
+function getSketchSource(
+  layer: EditorLayer
+): ShaderLabSketchSource | undefined {
   const sourceCode =
     typeof layer.params.sourceCode === "string" ? layer.params.sourceCode : ""
 
@@ -246,14 +259,16 @@ function getSketchSource(layer: EditorLayer): ShaderLabSketchSource | undefined 
   }
 
   const fileName =
-    typeof layer.params.sourceFileName === "string" && layer.params.sourceFileName.trim()
+    typeof layer.params.sourceFileName === "string" &&
+    layer.params.sourceFileName.trim()
       ? layer.params.sourceFileName.trim()
       : null
 
   return {
     code: sourceCode,
     entryExport:
-      typeof layer.params.entryExport === "string" && layer.params.entryExport.trim()
+      typeof layer.params.entryExport === "string" &&
+      layer.params.entryExport.trim()
         ? layer.params.entryExport.trim()
         : "sketch",
     mode: "inline",
@@ -261,11 +276,16 @@ function getSketchSource(layer: EditorLayer): ShaderLabSketchSource | undefined 
   }
 }
 
-function stripEditorOnlyParams(layer: EditorLayer): Record<string, ShaderLabParameterValue> {
+function stripEditorOnlyParams(
+  layer: EditorLayer
+): Record<string, ShaderLabParameterValue> {
   const params: Record<string, ShaderLabParameterValue> = {}
 
   for (const [key, value] of Object.entries(layer.params)) {
-    if (layer.type === "custom-shader" && CUSTOM_SHADER_INTERNAL_KEYS.has(key)) {
+    if (
+      layer.type === "custom-shader" &&
+      CUSTOM_SHADER_INTERNAL_KEYS.has(key)
+    ) {
       continue
     }
 
@@ -277,7 +297,7 @@ function stripEditorOnlyParams(layer: EditorLayer): Record<string, ShaderLabPara
 
 function buildAssetPlaceholderPath(
   kind: Extract<ShaderLabAssetSource["kind"], "image" | "video">,
-  fileName: string,
+  fileName: string
 ): string {
   const sanitizedFileName = sanitizeAssetFileName(fileName)
 

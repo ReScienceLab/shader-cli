@@ -17,6 +17,7 @@ import {
   vec3,
   vec4,
 } from "three/tsl"
+import type { LayerParameterValues } from "../types/editor"
 import { PassNode } from "./pass-node"
 import {
   acesTonemap,
@@ -25,13 +26,21 @@ import {
   totosTonemap,
 } from "./shaders/tsl/color/tonemapping"
 import { perlinNoise3d } from "./shaders/tsl/noise/perlin-noise-3d"
+import { ridgeNoise } from "./shaders/tsl/noise/ridge-noise"
 import { simplexNoise3d } from "./shaders/tsl/noise/simplex-noise-3d"
 import { turbulence } from "./shaders/tsl/noise/turbulence"
+import { valueNoise3d } from "./shaders/tsl/noise/value-noise-3d"
+import { voronoiNoise3d } from "./shaders/tsl/noise/voronoi-noise-3d"
 import { grainTexturePattern } from "./shaders/tsl/patterns/grain-texture-pattern"
-import type { LayerParameterValues } from "../types/editor"
 
 type Node = TSLNode
-type NoiseMode = "perlin" | "simplex" | "turbulence"
+type NoiseMode =
+  | "perlin"
+  | "ridge"
+  | "simplex"
+  | "turbulence"
+  | "value"
+  | "voronoi"
 type TonemapMode = "aces" | "cinematic" | "none" | "reinhard" | "totos"
 
 function hexToRgb(hex: string): [number, number, number] {
@@ -75,6 +84,7 @@ export class GradientPass extends PassNode {
   private readonly vignetteRadiusUniform: Node
   private readonly vignetteSoftnessUniform: Node
   private readonly vignetteStrengthUniform: Node
+  private noiseSeed = 0
   private readonly vortexAmountUniform: Node
   private readonly warpAmountUniform: Node
   private readonly warpBiasUniform: Node
@@ -124,6 +134,8 @@ export class GradientPass extends PassNode {
       typeof params.activePoints === "number"
         ? Math.max(2, Math.min(5, Math.round(params.activePoints)))
         : 5
+    const noiseSeed =
+      typeof params.noiseSeed === "number" ? params.noiseSeed : 0
     const warpAmount =
       typeof params.warpAmount === "number"
         ? Math.max(0, params.warpAmount)
@@ -225,7 +237,10 @@ export class GradientPass extends PassNode {
 
     switch (params.noiseType) {
       case "perlin":
+      case "ridge":
       case "turbulence":
+      case "value":
+      case "voronoi":
         nextNoiseMode = params.noiseType
         break
       default:
@@ -265,6 +280,11 @@ export class GradientPass extends PassNode {
 
     if (warpIterations !== this.warpIterations) {
       this.warpIterations = warpIterations
+      needsRebuild = true
+    }
+
+    if (noiseSeed !== this.noiseSeed) {
+      this.noiseSeed = noiseSeed
       needsRebuild = true
     }
 
@@ -334,7 +354,9 @@ export class GradientPass extends PassNode {
         const strength = this.warpAmountUniform.div(
           pow(float(i), this.warpDecayUniform)
         )
-        const warpInput = warpedUv.mul(this.warpScaleUniform)
+        const warpInput = warpedUv
+          .mul(this.warpScaleUniform)
+          .add(float(this.noiseSeed).mul(73.7))
         const timeOffsetX = time.mul(0.1).add(float(i * 100))
         const timeOffsetY = time.mul(0.1).add(float(i * 200))
         let noiseX: Node
@@ -347,19 +369,40 @@ export class GradientPass extends PassNode {
               vec3(warpInput.add(vec2(13.7, 7.1)), timeOffsetY)
             )
             break
+          case "value":
+            noiseX = valueNoise3d(vec3(warpInput, timeOffsetX))
+            noiseY = valueNoise3d(
+              vec3(warpInput.add(vec2(13.7, 7.1)), timeOffsetY)
+            )
+            break
+          case "voronoi":
+            noiseX = voronoiNoise3d(vec3(warpInput, timeOffsetX)).mul(2).sub(1)
+            noiseY = voronoiNoise3d(
+              vec3(warpInput.add(vec2(13.7, 7.1)), timeOffsetY)
+            )
+              .mul(2)
+              .sub(1)
+            break
+          case "ridge":
+            noiseX = ridgeNoise(vec3(warpInput, timeOffsetX)).mul(2).sub(1)
+            noiseY = ridgeNoise(
+              vec3(warpInput.add(vec2(13.7, 7.1)), timeOffsetY)
+            )
+              .mul(2)
+              .sub(1)
+            break
           case "turbulence":
-            noiseX = turbulence(vec3(warpInput, 0.0), timeOffsetX.mul(20), {
-              _amp: 0.7,
-              _exp: 1.4,
-              _freq: 2,
-              _num: 3,
-              _speed: 0.3,
-            }).x
-            noiseY = turbulence(
-              vec3(warpInput.add(vec2(5.4, 8.1)), 0.0),
-              timeOffsetY.mul(20),
-              { _amp: 0.7, _exp: 1.4, _freq: 2, _num: 3, _speed: 0.3 }
-            ).x
+            {
+              const disp = turbulence(warpInput, timeOffsetX.mul(20), {
+                _amp: 0.7,
+                _exp: 1.4,
+                _freq: 2,
+                _num: 10,
+                _speed: 0.3,
+              })
+              noiseX = disp.x
+              noiseY = disp.y
+            }
             break
           default:
             noiseX = simplexNoise3d(vec3(warpInput, timeOffsetX))

@@ -1,28 +1,57 @@
 import * as THREE from "three/webgpu"
-import { resolvePackageAssetUrl } from "./asset-url"
 
 export const PATTERN_PRESET_SOURCES = {
   bars: [
-    resolvePackageAssetUrl("patterns/bars/1.svg"),
-    resolvePackageAssetUrl("patterns/bars/2.svg"),
-    resolvePackageAssetUrl("patterns/bars/3.svg"),
-    resolvePackageAssetUrl("patterns/bars/4.svg"),
-    resolvePackageAssetUrl("patterns/bars/5.svg"),
-    resolvePackageAssetUrl("patterns/bars/6.svg"),
+    new URL("../../../assets/patterns/bars/1.svg", import.meta.url).toString(),
+    new URL("../../../assets/patterns/bars/2.svg", import.meta.url).toString(),
+    new URL("../../../assets/patterns/bars/3.svg", import.meta.url).toString(),
+    new URL("../../../assets/patterns/bars/4.svg", import.meta.url).toString(),
+    new URL("../../../assets/patterns/bars/5.svg", import.meta.url).toString(),
+    new URL("../../../assets/patterns/bars/6.svg", import.meta.url).toString(),
   ],
   candles: [
-    resolvePackageAssetUrl("patterns/candles/1.svg"),
-    resolvePackageAssetUrl("patterns/candles/2.svg"),
-    resolvePackageAssetUrl("patterns/candles/3.svg"),
-    resolvePackageAssetUrl("patterns/candles/4.svg"),
+    new URL(
+      "../../../assets/patterns/candles/1.svg",
+      import.meta.url
+    ).toString(),
+    new URL(
+      "../../../assets/patterns/candles/2.svg",
+      import.meta.url
+    ).toString(),
+    new URL(
+      "../../../assets/patterns/candles/3.svg",
+      import.meta.url
+    ).toString(),
+    new URL(
+      "../../../assets/patterns/candles/4.svg",
+      import.meta.url
+    ).toString(),
   ],
   shapes: [
-    resolvePackageAssetUrl("patterns/shapes/1.svg"),
-    resolvePackageAssetUrl("patterns/shapes/2.svg"),
-    resolvePackageAssetUrl("patterns/shapes/3.svg"),
-    resolvePackageAssetUrl("patterns/shapes/4.svg"),
-    resolvePackageAssetUrl("patterns/shapes/5.svg"),
-    resolvePackageAssetUrl("patterns/shapes/6.svg"),
+    new URL(
+      "../../../assets/patterns/shapes/1.svg",
+      import.meta.url
+    ).toString(),
+    new URL(
+      "../../../assets/patterns/shapes/2.svg",
+      import.meta.url
+    ).toString(),
+    new URL(
+      "../../../assets/patterns/shapes/3.svg",
+      import.meta.url
+    ).toString(),
+    new URL(
+      "../../../assets/patterns/shapes/4.svg",
+      import.meta.url
+    ).toString(),
+    new URL(
+      "../../../assets/patterns/shapes/5.svg",
+      import.meta.url
+    ).toString(),
+    new URL(
+      "../../../assets/patterns/shapes/6.svg",
+      import.meta.url
+    ).toString(),
   ],
 } as const
 
@@ -33,14 +62,15 @@ function loadSvg(url: string): Promise<HTMLImageElement> {
     const image = new Image()
     image.decoding = "async"
     image.onload = () => resolve(image)
-    image.onerror = () => reject(new Error(`Unable to load SVG pattern: ${url}`))
+    image.onerror = () =>
+      reject(new Error(`Unable to load SVG pattern: ${url}`))
     image.src = url
   })
 }
 
 export async function buildPatternAtlas(
   preset: PatternPreset,
-  cellPx = 16,
+  cellPx = 16
 ): Promise<THREE.CanvasTexture> {
   const urls = PATTERN_PRESET_SOURCES[preset]
   const cellSize = Math.max(4, Math.round(cellPx))
@@ -63,7 +93,8 @@ export async function buildPatternAtlas(
   for (const [index, image] of images.entries()) {
     const aspect = image.naturalWidth / Math.max(image.naturalHeight, 1)
     const drawWidth = aspect >= 1 ? cellSize : cellSize * aspect
-    const drawHeight = aspect >= 1 ? cellSize / Math.max(aspect, 0.0001) : cellSize
+    const drawHeight =
+      aspect >= 1 ? cellSize / Math.max(aspect, 0.0001) : cellSize
     const x = index * cellSize + (cellSize - drawWidth) * 0.5
     const y = (cellSize - drawHeight) * 0.5
 
@@ -75,7 +106,11 @@ export async function buildPatternAtlas(
 
   for (let index = 0; index < data.length; index += 4) {
     const alpha = data[index + 3] ?? 0
-    const luminance = Math.max(data[index] ?? 0, data[index + 1] ?? 0, data[index + 2] ?? 0)
+    const luminance = Math.max(
+      data[index] ?? 0,
+      data[index + 1] ?? 0,
+      data[index + 2] ?? 0
+    )
     const mask = alpha > 0 && luminance > 32 ? 255 : 0
     data[index] = mask
     data[index + 1] = mask

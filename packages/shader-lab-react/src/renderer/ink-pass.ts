@@ -1,4 +1,3 @@
-import * as THREE from "three/webgpu"
 import { bloom } from "three/examples/jsm/tsl/display/BloomNode.js"
 import {
   clamp,
@@ -9,21 +8,26 @@ import {
   select,
   sin,
   smoothstep,
-  texture as tslTexture,
   type TSLNode,
+  texture as tslTexture,
   uniform,
   uv,
   vec2,
   vec3,
   vec4,
 } from "three/tsl"
-import { resolvePackageAssetUrl } from "./asset-url"
-import { PassNode } from "./pass-node"
-import { loadImageTexture } from "./media-texture"
-import { grainTexturePattern } from "./shaders/tsl/patterns/grain-texture-pattern"
+import * as THREE from "three/webgpu"
 import type { LayerParameterValues } from "../types/editor"
+import { loadImageTexture } from "./media-texture"
+import { PassNode } from "./pass-node"
+import { grainTexturePattern } from "./shaders/tsl/patterns/grain-texture-pattern"
 
 type Node = TSLNode
+
+const BLUE_NOISE_TEXTURE_URL = new URL(
+  "../../../assets/textures/blue-noise.png",
+  import.meta.url
+).toString()
 
 const INTERNAL_TARGET_OPTIONS = {
   depthBuffer: false,
@@ -140,7 +144,9 @@ export class InkPass extends PassNode {
     this.bloomSoftnessUniform = uniform(0.35)
     this.bloomThresholdUniform = uniform(0.6)
 
-    this.backgroundColorUniform = uniform(new THREE.Vector3(0.039, 0.043, 0.051))
+    this.backgroundColorUniform = uniform(
+      new THREE.Vector3(0.039, 0.043, 0.051)
+    )
     this.coreColorUniform = uniform(new THREE.Vector3(1.0, 0.992, 0.91))
     this.midColorUniform = uniform(new THREE.Vector3(0.784, 0.961, 0.259))
     this.edgeColorUniform = uniform(new THREE.Vector3(0.0, 0.788, 0.655))
@@ -165,19 +171,37 @@ export class InkPass extends PassNode {
     this.timeUniform = uniform(0)
 
     this.readTarget = new THREE.WebGLRenderTarget(1, 1, INTERNAL_TARGET_OPTIONS)
-    this.writeTarget = new THREE.WebGLRenderTarget(1, 1, INTERNAL_TARGET_OPTIONS)
-    this.crispTarget = new THREE.WebGLRenderTarget(1, 1, INTERNAL_TARGET_OPTIONS)
-    this.compositeTarget = new THREE.WebGLRenderTarget(1, 1, INTERNAL_TARGET_OPTIONS)
+    this.writeTarget = new THREE.WebGLRenderTarget(
+      1,
+      1,
+      INTERNAL_TARGET_OPTIONS
+    )
+    this.crispTarget = new THREE.WebGLRenderTarget(
+      1,
+      1,
+      INTERNAL_TARGET_OPTIONS
+    )
+    this.compositeTarget = new THREE.WebGLRenderTarget(
+      1,
+      1,
+      INTERNAL_TARGET_OPTIONS
+    )
 
     this.blurMaterial = new THREE.MeshBasicNodeMaterial()
     this.blurMaterial.colorNode = this.buildBlurNode()
-    const blurMesh = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), this.blurMaterial)
+    const blurMesh = new THREE.Mesh(
+      new THREE.PlaneGeometry(2, 2),
+      this.blurMaterial
+    )
     blurMesh.frustumCulled = false
     this.blurScene.add(blurMesh)
 
     this.copyMaterial = new THREE.MeshBasicNodeMaterial()
     this.copyMaterial.colorNode = vec4(this.copyInputNode.rgb, float(1))
-    const copyMesh = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), this.copyMaterial)
+    const copyMesh = new THREE.Mesh(
+      new THREE.PlaneGeometry(2, 2),
+      this.copyMaterial
+    )
     copyMesh.frustumCulled = false
     this.copyScene.add(copyMesh)
 
@@ -185,7 +209,7 @@ export class InkPass extends PassNode {
     this.compositeMaterial.colorNode = this.buildCompositeNode()
     const compositeMesh = new THREE.Mesh(
       new THREE.PlaneGeometry(2, 2),
-      this.compositeMaterial,
+      this.compositeMaterial
     )
     compositeMesh.frustumCulled = false
     this.compositeScene.add(compositeMesh)
@@ -198,7 +222,7 @@ export class InkPass extends PassNode {
     inputTexture: THREE.Texture,
     outputTarget: THREE.WebGLRenderTarget,
     time: number,
-    delta: number,
+    delta: number
   ): void {
     this.ensureNoiseTexture()
 
@@ -267,66 +291,101 @@ export class InkPass extends PassNode {
   }
 
   override updateParams(params: LayerParameterValues): void {
-    const angle = (((typeof params.blurDirection === "number" ? params.blurDirection : 68) *
-      Math.PI) /
-      180)
+    const angle =
+      ((typeof params.blurDirection === "number" ? params.blurDirection : 68) *
+        Math.PI) /
+      180
 
     this.directionXUniform.value = Math.cos(angle)
     this.directionYUniform.value = Math.sin(angle)
     this.blurPassCount =
-      typeof params.blurPasses === "number" ? Math.max(1, Math.round(params.blurPasses)) : 12
+      typeof params.blurPasses === "number"
+        ? Math.max(1, Math.round(params.blurPasses))
+        : 12
     this.crispPassCount =
-      typeof params.crispPasses === "number" ? Math.max(1, Math.round(params.crispPasses)) : 3
+      typeof params.crispPasses === "number"
+        ? Math.max(1, Math.round(params.crispPasses))
+        : 3
     this.blurStrengthUniform.value =
-      typeof params.blurStrength === "number" ? Math.max(0.001, params.blurStrength) : 0.02
+      typeof params.blurStrength === "number"
+        ? Math.max(0.001, params.blurStrength)
+        : 0.02
     this.crispBlendUniform.value =
       typeof params.crispBlend === "number" ? clamp01(params.crispBlend) : 0.75
     this.dripLengthUniform.value =
-      typeof params.dripLength === "number" ? Math.max(1, params.dripLength) : 7.1
+      typeof params.dripLength === "number"
+        ? Math.max(1, params.dripLength)
+        : 7.1
     this.dripWeightUniform.value =
-      typeof params.dripWeight === "number" ? Math.max(0.2, params.dripWeight) : 1.2
+      typeof params.dripWeight === "number"
+        ? Math.max(0.2, params.dripWeight)
+        : 1.2
     this.fluidNoiseUniform.value =
-      typeof params.fluidNoise === "number" ? Math.max(0, params.fluidNoise) : 0.2
+      typeof params.fluidNoise === "number"
+        ? Math.max(0, params.fluidNoise)
+        : 0.2
     this.noiseScaleUniform.value =
-      typeof params.noiseScale === "number" ? Math.max(0.5, params.noiseScale) : 1
+      typeof params.noiseScale === "number"
+        ? Math.max(0.5, params.noiseScale)
+        : 1
     this.smokeSpeedUniform.value =
-      typeof params.smokeSpeed === "number" ? Math.max(0, params.smokeSpeed) : 0.2
+      typeof params.smokeSpeed === "number"
+        ? Math.max(0, params.smokeSpeed)
+        : 0.2
     this.smokeTurbulenceUniform.value =
-      typeof params.smokeTurbulence === "number" ? Math.max(0, params.smokeTurbulence) : 0.25
+      typeof params.smokeTurbulence === "number"
+        ? Math.max(0, params.smokeTurbulence)
+        : 0.25
     this.blurSpreadUniform.value =
-      typeof params.blurSpread === "number" ? Math.max(0.5, params.blurSpread) : 1.7
+      typeof params.blurSpread === "number"
+        ? Math.max(0.5, params.blurSpread)
+        : 1.7
     this.grainEnabledUniform.value = params.grainEnabled === false ? 0 : 1
     this.grainIntensityUniform.value =
-      typeof params.grainIntensity === "number" ? clamp01(params.grainIntensity) : 0.3
+      typeof params.grainIntensity === "number"
+        ? clamp01(params.grainIntensity)
+        : 0.3
     this.grainScaleUniform.value =
-      typeof params.grainScale === "number" ? Math.max(0.5, params.grainScale) : 1.5
+      typeof params.grainScale === "number"
+        ? Math.max(0.5, params.grainScale)
+        : 1.5
 
     this.setColorUniform(
       this.backgroundColorUniform,
-      typeof params.backgroundColor === "string" ? params.backgroundColor : "#0a0b0d",
+      typeof params.backgroundColor === "string"
+        ? params.backgroundColor
+        : "#0a0b0d"
     )
     this.setColorUniform(
       this.coreColorUniform,
-      typeof params.coreColor === "string" ? params.coreColor : "#fffde8",
+      typeof params.coreColor === "string" ? params.coreColor : "#fffde8"
     )
     this.setColorUniform(
       this.midColorUniform,
-      typeof params.midColor === "string" ? params.midColor : "#c8f542",
+      typeof params.midColor === "string" ? params.midColor : "#c8f542"
     )
     this.setColorUniform(
       this.edgeColorUniform,
-      typeof params.edgeColor === "string" ? params.edgeColor : "#00c9a7",
+      typeof params.edgeColor === "string" ? params.edgeColor : "#00c9a7"
     )
 
     const nextBloomEnabled = params.bloomEnabled === true
     const nextBloomIntensity =
-      typeof params.bloomIntensity === "number" ? Math.max(0, params.bloomIntensity) : 1.25
+      typeof params.bloomIntensity === "number"
+        ? Math.max(0, params.bloomIntensity)
+        : 1.25
     const nextBloomThreshold =
-      typeof params.bloomThreshold === "number" ? clamp01(params.bloomThreshold) : 0.6
+      typeof params.bloomThreshold === "number"
+        ? clamp01(params.bloomThreshold)
+        : 0.6
     const nextBloomRadius =
-      typeof params.bloomRadius === "number" ? Math.max(0, params.bloomRadius) : 6
+      typeof params.bloomRadius === "number"
+        ? Math.max(0, params.bloomRadius)
+        : 6
     const nextBloomSoftness =
-      typeof params.bloomSoftness === "number" ? clamp01(params.bloomSoftness) : 0.35
+      typeof params.bloomSoftness === "number"
+        ? clamp01(params.bloomSoftness)
+        : 0.35
 
     this.bloomIntensityUniform.value = nextBloomIntensity
     this.bloomRadiusUniform.value = nextBloomRadius
@@ -340,7 +399,8 @@ export class InkPass extends PassNode {
       this.bloomNode.strength.value = nextBloomIntensity
       this.bloomNode.radius.value = this.normalizeBloomRadius(nextBloomRadius)
       this.bloomNode.threshold.value = nextBloomThreshold
-      this.bloomNode.smoothWidth.value = this.normalizeBloomSoftness(nextBloomSoftness)
+      this.bloomNode.smoothWidth.value =
+        this.normalizeBloomSoftness(nextBloomSoftness)
     }
 
     this.isAnimated = (this.smokeSpeedUniform.value as number) > 0
@@ -381,7 +441,11 @@ export class InkPass extends PassNode {
     this.disposeBloomNode()
     this.bloomNode = null
 
-    const baseColor = vec3(this.finalInputNode.r, this.finalInputNode.g, this.finalInputNode.b)
+    const baseColor = vec3(
+      this.finalInputNode.r,
+      this.finalInputNode.g,
+      this.finalInputNode.b
+    )
 
     if (!this.bloomEnabled) {
       return vec4(baseColor, float(1))
@@ -391,19 +455,19 @@ export class InkPass extends PassNode {
       vec4(baseColor, float(1)),
       this.bloomIntensityUniform.value as number,
       this.normalizeBloomRadius(this.bloomRadiusUniform.value as number),
-      this.bloomThresholdUniform.value as number,
+      this.bloomThresholdUniform.value as number
     )
     this.bloomNode.smoothWidth.value = this.normalizeBloomSoftness(
-      this.bloomSoftnessUniform.value as number,
+      this.bloomSoftnessUniform.value as number
     )
 
     return vec4(
       clamp(
         baseColor.add(this.getBloomTextureNode().rgb),
         vec3(float(0), float(0), float(0)),
-        vec3(float(1), float(1), float(1)),
+        vec3(float(1), float(1), float(1))
       ),
-      float(1),
+      float(1)
     )
   }
 
@@ -414,21 +478,30 @@ export class InkPass extends PassNode {
     const texUv = vec2(uv().x, float(1).sub(uv().y))
     const texelSize = vec2(
       float(1).div(this.resolutionWidthUniform),
-      float(1).div(this.resolutionHeightUniform),
+      float(1).div(this.resolutionHeightUniform)
     )
     const original = this.blurInputNode
     const originalIntensity = max(max(original.r, original.g), original.b)
     const rotatedUv = vec2(
-      texUv.x.mul(float(Math.cos(0.7854))).sub(texUv.y.mul(float(Math.sin(0.7854)))),
-      texUv.x.mul(float(Math.sin(0.7854))).add(texUv.y.mul(float(Math.cos(0.7854)))),
+      texUv.x
+        .mul(float(Math.cos(0.7854)))
+        .sub(texUv.y.mul(float(Math.sin(0.7854)))),
+      texUv.x
+        .mul(float(Math.sin(0.7854)))
+        .add(texUv.y.mul(float(Math.cos(0.7854))))
     )
     const timeOffset1 = vec2(
       this.timeUniform.mul(this.smokeSpeedUniform).mul(0.3),
-      this.timeUniform.mul(this.smokeSpeedUniform).mul(0.15),
+      this.timeUniform.mul(this.smokeSpeedUniform).mul(0.15)
     )
     const timeOffset2 = vec2(
       sin(this.timeUniform.mul(this.smokeSpeedUniform).mul(0.7)).mul(0.1),
-      sin(this.timeUniform.mul(this.smokeSpeedUniform).mul(0.5).add(float(1.5707963))).mul(0.08),
+      sin(
+        this.timeUniform
+          .mul(this.smokeSpeedUniform)
+          .mul(0.5)
+          .add(float(1.5707963))
+      ).mul(0.08)
     )
     const noiseUv1 = texUv
       .mul(this.noiseScaleUniform)
@@ -437,7 +510,9 @@ export class InkPass extends PassNode {
     const noiseUv2 = rotatedUv
       .mul(this.noiseScaleUniform)
       .mul(0.8)
-      .add(vec2(this.passIndexUniform.mul(0.15), this.passIndexUniform.mul(0.15)))
+      .add(
+        vec2(this.passIndexUniform.mul(0.15), this.passIndexUniform.mul(0.15))
+      )
       .add(timeOffset1.mul(1.2))
     const turbulenceUv = rotatedUv
       .mul(this.noiseScaleUniform)
@@ -459,13 +534,18 @@ export class InkPass extends PassNode {
       .mul(2)
       .mul(this.fluidNoiseUniform)
       .mul(0.4)
-      .add(turbulenceSample.g.sub(0.5).mul(this.smokeTurbulenceUniform).mul(0.5))
+      .add(
+        turbulenceSample.g.sub(0.5).mul(this.smokeTurbulenceUniform).mul(0.5)
+      )
 
     const flowDir = vec2(
       this.directionXUniform.add(noiseX),
-      this.directionYUniform.add(noiseY),
+      this.directionYUniform.add(noiseY)
     ).normalize()
-    const baseNoise = noiseSample.b.sub(0.5).mul(0.03).mul(this.fluidNoiseUniform)
+    const baseNoise = noiseSample.b
+      .sub(0.5)
+      .mul(0.03)
+      .mul(this.fluidNoiseUniform)
 
     let result: Node = vec4(float(0), float(0), float(0), float(0))
     let totalWeight: Node = float(0)
@@ -476,18 +556,28 @@ export class InkPass extends PassNode {
       const sampleDist = asymmetry
         .mul(this.dripLengthUniform)
         .mul(this.blurStrengthUniform)
-        .mul(float(1).add(this.passIndexUniform.mul(this.blurSpreadUniform).mul(0.15)))
+        .mul(
+          float(1).add(
+            this.passIndexUniform.mul(this.blurSpreadUniform).mul(0.15)
+          )
+        )
       const sampleNoise = baseNoise.mul(float(1 + sampleIndex * 0.1))
-      const disperseTurbulence = sampleNoise.mul(t).mul(this.smokeTurbulenceUniform)
+      const disperseTurbulence = sampleNoise
+        .mul(t)
+        .mul(this.smokeTurbulenceUniform)
       const samplePos = texUv
         .add(flowDir.mul(sampleDist).mul(texelSize).mul(100))
         .add(
           vec2(
             sampleNoise.add(disperseTurbulence),
-            sampleNoise.add(disperseTurbulence).mul(0.3),
-          ),
+            sampleNoise.add(disperseTurbulence).mul(0.3)
+          )
         )
-      const weight = mix(float(1).sub(t), float(1), smoothstep(float(0.35), float(0), t))
+      const weight = mix(
+        float(1).sub(t),
+        float(1),
+        smoothstep(float(0.35), float(0), t)
+      )
       const sample = this.trackBlurSampleNode(samplePos)
       result = result.add(sample.mul(weight))
       totalWeight = totalWeight.add(weight)
@@ -499,7 +589,9 @@ export class InkPass extends PassNode {
         .mul(this.dripLengthUniform)
         .mul(this.blurStrengthUniform)
         .mul(0.2)
-      const samplePos = texUv.sub(flowDir.mul(sampleDist).mul(texelSize).mul(100))
+      const samplePos = texUv.sub(
+        flowDir.mul(sampleDist).mul(texelSize).mul(100)
+      )
       const weight = float(1).sub(t).mul(0.4)
       const sample = this.trackBlurSampleNode(samplePos)
       result = result.add(sample.mul(weight))
@@ -508,7 +600,10 @@ export class InkPass extends PassNode {
 
     const blurred = result.div(max(totalWeight, float(0.0001)))
     const lifted = max(blurred, original)
-    return vec4(mix(blurred.rgb, lifted.rgb, originalIntensity.mul(0.5)), float(1))
+    return vec4(
+      mix(blurred.rgb, lifted.rgb, originalIntensity.mul(0.5)),
+      float(1)
+    )
   }
 
   private buildCompositeNode(): Node {
@@ -521,72 +616,89 @@ export class InkPass extends PassNode {
     const crispIntensity = max(max(crispSample.r, crispSample.g), crispSample.b)
     const texelSize = vec2(
       float(1).div(this.resolutionWidthUniform),
-      float(1).div(this.resolutionHeightUniform),
+      float(1).div(this.resolutionHeightUniform)
     )
     const blurR = this.trackCompositeBlurNode(
-      texUv.add(vec2(texelSize.x.mul(2), texelSize.y)),
+      texUv.add(vec2(texelSize.x.mul(2), texelSize.y))
     ).r
     const blurB = this.trackCompositeBlurNode(
-      texUv.sub(vec2(texelSize.x.mul(2), texelSize.y)),
+      texUv.sub(vec2(texelSize.x.mul(2), texelSize.y))
     ).b
 
     const backgroundColor = vec3(
       float(this.backgroundColorUniform.x),
       float(this.backgroundColorUniform.y),
-      float(this.backgroundColorUniform.z),
+      float(this.backgroundColorUniform.z)
     )
     const edgeColor = vec3(
       float(this.edgeColorUniform.x),
       float(this.edgeColorUniform.y),
-      float(this.edgeColorUniform.z),
+      float(this.edgeColorUniform.z)
     )
     const midColor = vec3(
       float(this.midColorUniform.x),
       float(this.midColorUniform.y),
-      float(this.midColorUniform.z),
+      float(this.midColorUniform.z)
     )
     const coreColor = vec3(
       float(this.coreColorUniform.x),
       float(this.coreColorUniform.y),
-      float(this.coreColorUniform.z),
+      float(this.coreColorUniform.z)
     )
 
-    const fluidColor = this.applyColorGradient(blurIntensity, backgroundColor, edgeColor, midColor, coreColor)
+    const fluidColor = this.applyColorGradient(
+      blurIntensity,
+      backgroundColor,
+      edgeColor,
+      midColor,
+      coreColor
+    )
     const crispColor = this.applyColorGradient(
       crispIntensity,
       backgroundColor,
       edgeColor,
       midColor,
-      coreColor,
+      coreColor
     )
     const fluidColorChroma = vec3(
       mix(fluidColor.x, fluidColor.x.mul(1.1), blurR.mul(0.3)),
       fluidColor.y,
-      mix(fluidColor.z, fluidColor.z.mul(1.15), blurB.mul(0.3)),
+      mix(fluidColor.z, fluidColor.z.mul(1.15), blurB.mul(0.3))
     )
 
     const fluidMask = pow(clamp(blurIntensity, float(0), float(1)), float(1.2))
-    const crispMask = pow(clamp(crispIntensity, float(0), float(1)), float(0.96))
+    const crispMask = pow(
+      clamp(crispIntensity, float(0), float(1)),
+      float(0.96)
+    )
     const fluidGlow = fluidColorChroma.mul(fluidMask).mul(1.8)
     const crispGlow = crispColor.mul(crispMask).mul(1.95)
     const crispWeight = crispMask.mul(this.crispBlendUniform)
-    let combined = mix(fluidGlow, crispGlow, crispWeight).add(fluidGlow.mul(0.15))
+    let combined = mix(fluidGlow, crispGlow, crispWeight).add(
+      fluidGlow.mul(0.15)
+    )
 
     const grain = grainTexturePattern(
-      texUv.mul(vec2(this.grainScaleUniform, this.grainScaleUniform)),
+      texUv.mul(vec2(this.grainScaleUniform, this.grainScaleUniform))
     )
       .sub(0.5)
       .mul(this.grainIntensityUniform)
     combined = select(
       this.grainEnabledUniform.greaterThan(float(0.5)),
       combined.add(vec3(grain, grain, grain)),
-      combined,
+      combined
     )
 
     const alpha = max(fluidMask, crispMask)
-    let finalColor = mix(backgroundColor, combined, smoothstep(float(0.01), float(0.85), alpha))
+    let finalColor = mix(
+      backgroundColor,
+      combined,
+      smoothstep(float(0.01), float(0.85), alpha)
+    )
     const vignetteUv = texUv.mul(2).sub(vec2(1, 1))
-    finalColor = finalColor.mul(float(1).sub(vignetteUv.dot(vignetteUv).mul(0.15)))
+    finalColor = finalColor.mul(
+      float(1).sub(vignetteUv.dot(vignetteUv).mul(0.15))
+    )
 
     return vec4(clamp(finalColor, vec3(0, 0, 0), vec3(1, 1, 1)), float(1))
   }
@@ -596,7 +708,7 @@ export class InkPass extends PassNode {
     bgColor: Node,
     edgeColor: Node,
     midColor: Node,
-    coreColor: Node,
+    coreColor: Node
   ): Node {
     const t1 = smoothstep(float(0.6), float(0.95), intensity)
     const t2 = smoothstep(float(0.2), float(0.65), intensity)
@@ -612,7 +724,7 @@ export class InkPass extends PassNode {
     }
 
     this.noiseLoadStarted = true
-    void loadImageTexture(resolvePackageAssetUrl("textures/blue-noise.png"))
+    void loadImageTexture(BLUE_NOISE_TEXTURE_URL)
       .then((texture) => {
         texture.wrapS = THREE.RepeatWrapping
         texture.wrapT = THREE.RepeatWrapping
@@ -671,11 +783,17 @@ export class InkPass extends PassNode {
       throw new Error("Bloom node is not initialized")
     }
 
-    if ("getTextureNode" in bloomNode && typeof bloomNode.getTextureNode === "function") {
+    if (
+      "getTextureNode" in bloomNode &&
+      typeof bloomNode.getTextureNode === "function"
+    ) {
       return bloomNode.getTextureNode()
     }
 
-    if ("getTexture" in bloomNode && typeof bloomNode.getTexture === "function") {
+    if (
+      "getTexture" in bloomNode &&
+      typeof bloomNode.getTexture === "function"
+    ) {
       return bloomNode.getTexture()
     }
 

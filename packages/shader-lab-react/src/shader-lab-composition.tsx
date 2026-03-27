@@ -1,10 +1,5 @@
-import {
-  type CSSProperties,
-  useEffect,
-  useRef,
-  useState,
-} from "react"
-import { buildRendererFrame } from "./renderer/contracts"
+import { type CSSProperties, useEffect, useRef, useState } from "react"
+import { buildRendererFrame, type RendererSize } from "./renderer/contracts"
 import {
   browserSupportsWebGPU,
   createWebGPURenderer,
@@ -44,12 +39,25 @@ export function ShaderLabComposition({
     }
 
     let cancelled = false
-    let rendererPromise: Promise<Awaited<ReturnType<typeof createWebGPURenderer>>> | null = null
-    let runtimeRenderer: Awaited<ReturnType<typeof createWebGPURenderer>> | null = null
+    let rendererPromise: Promise<
+      Awaited<ReturnType<typeof createWebGPURenderer>>
+    > | null = null
+    let runtimeRenderer: Awaited<
+      ReturnType<typeof createWebGPURenderer>
+    > | null = null
 
     const handleRuntimeError = (message: string | null) => {
       setRuntimeError(message)
       onRuntimeError?.(message)
+    }
+
+    const getViewportSize = (): RendererSize => {
+      const bounds = canvas.getBoundingClientRect()
+
+      return {
+        height: Math.max(1, Math.round(bounds.height)),
+        width: Math.max(1, Math.round(bounds.width)),
+      }
     }
 
     const renderFrame = (now: number) => {
@@ -62,9 +70,17 @@ export function ShaderLabComposition({
       lastTimeRef.current = now
 
       const devicePixelRatio = window.devicePixelRatio || 1
-      runtimeRenderer.resize(config.composition, devicePixelRatio)
+      const viewportSize = getViewportSize()
+
+      runtimeRenderer.resize(viewportSize, devicePixelRatio)
       runtimeRenderer.render(
-        buildRendererFrame(config, now / 1000, delta, devicePixelRatio),
+        buildRendererFrame(
+          config,
+          now / 1000,
+          delta,
+          devicePixelRatio,
+          viewportSize
+        )
       )
 
       frameRef.current = window.requestAnimationFrame(renderFrame)
@@ -88,7 +104,7 @@ export function ShaderLabComposition({
         handleRuntimeError(
           error instanceof Error
             ? error.message
-            : "Failed to initialize the Shader Lab runtime renderer.",
+            : "Failed to initialize the Shader Lab runtime renderer."
         )
       })
 
