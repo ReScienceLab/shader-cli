@@ -1,5 +1,6 @@
 import { float, type TSLNode, texture as tslTexture, uv, vec2 } from "three/tsl"
 import * as THREE from "three/webgpu"
+import type { ShaderLabCompositeMode, ShaderLabLayerConfig } from "../types"
 import { AsciiPass } from "./ascii-pass"
 import { CrtPass } from "./crt-pass"
 import { CustomShaderPass } from "./custom-shader-pass"
@@ -14,7 +15,6 @@ import type { PassNode } from "./pass-node"
 import { PatternPass } from "./pattern-pass"
 import { PixelSortingPass } from "./pixel-sorting-pass"
 import { TextPass } from "./text-pass"
-import type { ShaderLabCompositeMode, ShaderLabLayerConfig } from "../types"
 
 type LayerPassNode =
   | AsciiPass
@@ -46,11 +46,13 @@ function clampUnit(value: number): number {
   return Math.max(0, Math.min(1, value))
 }
 
-function parameterValuesSignature(params: ShaderLabLayerConfig["params"]): string {
+function parameterValuesSignature(
+  params: ShaderLabLayerConfig["params"]
+): string {
   return JSON.stringify(
     Object.entries(params)
       .sort(([left], [right]) => left.localeCompare(right))
-      .map(([key, value]) => [key, value]),
+      .map(([key, value]) => [key, value])
   )
 }
 
@@ -69,9 +71,15 @@ function createLayerSignature(layer: ShaderLabLayerConfig): string {
       typeof layer.params.sourceRevision === "number"
         ? String(layer.params.sourceRevision)
         : "0",
-      typeof layer.params.sourceMode === "string" ? layer.params.sourceMode : "paste",
-      typeof layer.params.entryExport === "string" ? layer.params.entryExport : "sketch",
-      typeof layer.params.sourceFileName === "string" ? layer.params.sourceFileName : "",
+      typeof layer.params.sourceMode === "string"
+        ? layer.params.sourceMode
+        : "paste",
+      typeof layer.params.entryExport === "string"
+        ? layer.params.entryExport
+        : "sketch",
+      typeof layer.params.sourceFileName === "string"
+        ? layer.params.sourceFileName
+        : "",
     ].join("|")
   }
 
@@ -99,7 +107,9 @@ export class PipelineManager {
   private readonly blitCamera: THREE.OrthographicCamera
   private readonly blitInputNode: TSLNode
   private readonly blitMaterial: THREE.MeshBasicNodeMaterial
-  private readonly onRuntimeError: ((message: string | null) => void) | undefined
+  private readonly onRuntimeError:
+    | ((message: string | null) => void)
+    | undefined
 
   private passMap = new Map<string, LayerPassNode>()
   private passes: LayerPassNode[] = []
@@ -111,11 +121,12 @@ export class PipelineManager {
   private logicalHeight: number
   private rtA: THREE.WebGLRenderTarget
   private rtB: THREE.WebGLRenderTarget
+  private lastReadTarget: THREE.WebGLRenderTarget | null = null
 
   constructor(
     renderer: THREE.WebGPURenderer,
     size: { height: number; width: number },
-    onRuntimeError?: (message: string | null) => void,
+    onRuntimeError?: (message: string | null) => void
   ) {
     this.renderer = renderer
     this.onRuntimeError = onRuntimeError
@@ -131,8 +142,16 @@ export class PipelineManager {
     baseMesh.frustumCulled = false
     this.baseScene.add(baseMesh)
 
-    this.rtA = new THREE.WebGLRenderTarget(this.width, this.height, RENDER_TARGET_OPTIONS)
-    this.rtB = new THREE.WebGLRenderTarget(this.width, this.height, RENDER_TARGET_OPTIONS)
+    this.rtA = new THREE.WebGLRenderTarget(
+      this.width,
+      this.height,
+      RENDER_TARGET_OPTIONS
+    )
+    this.rtB = new THREE.WebGLRenderTarget(
+      this.width,
+      this.height,
+      RENDER_TARGET_OPTIONS
+    )
 
     this.blitScene = new THREE.Scene()
     this.blitCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1)
@@ -140,7 +159,10 @@ export class PipelineManager {
     this.blitInputNode = tslTexture(new THREE.Texture(), blitUv)
     this.blitMaterial = new THREE.MeshBasicNodeMaterial()
     this.blitMaterial.colorNode = this.blitInputNode
-    const blitMesh = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), this.blitMaterial)
+    const blitMesh = new THREE.Mesh(
+      new THREE.PlaneGeometry(2, 2),
+      this.blitMaterial
+    )
     blitMesh.frustumCulled = false
     this.blitScene.add(blitMesh)
   }
@@ -193,7 +215,9 @@ export class PipelineManager {
 
   render(time: number, delta: number): boolean {
     const activePasses = this.passes.filter((pass) => pass.enabled)
-    const needsContinuousRender = activePasses.some((pass) => pass.needsContinuousRender())
+    const needsContinuousRender = activePasses.some((pass) =>
+      pass.needsContinuousRender()
+    )
 
     if (!(this.dirty || needsContinuousRender)) {
       return false
@@ -224,6 +248,52 @@ export class PipelineManager {
     this.renderer.render(this.blitScene, this.blitCamera)
     this.dirty = false
     return true
+  }
+
+  renderToTexture(
+    time: number,
+    delta: number,
+    inputTexture?: THREE.Texture
+  ): THREE.Texture | null {
+    const activePasses = this.passes.filter((pass) => pass.enabled)
+    const needsContinuousRender = activePasses.some((pass) =>
+      pass.needsContinuousRender()
+    )
+
+    if (inputTexture === undefined && !(this.dirty || needsContinuousRender)) {
+      return this.lastReadTarget?.texture ?? null
+    }
+
+    if (inputTexture) {
+      this.blitInputNode.value = inputTexture
+      this.renderer.setRenderTarget(this.rtA)
+      this.renderer.render(this.blitScene, this.blitCamera)
+    } else {
+      this.renderer.setRenderTarget(this.rtA)
+      this.renderer.render(this.baseScene, this.baseCamera)
+    }
+
+    if (activePasses.length === 0) {
+      this.dirty = false
+      this.lastReadTarget = this.rtA
+      this.renderer.setRenderTarget(null)
+      return this.rtA.texture
+    }
+
+    let readTarget = this.rtA
+    let writeTarget = this.rtB
+
+    for (const pass of activePasses) {
+      pass.render(this.renderer, readTarget.texture, writeTarget, time, delta)
+      const previousRead = readTarget
+      readTarget = writeTarget
+      writeTarget = previousRead
+    }
+
+    this.dirty = false
+    this.lastReadTarget = readTarget
+    this.renderer.setRenderTarget(null)
+    return readTarget.texture
   }
 
   resize(size: { height: number; width: number }): void {
@@ -271,7 +341,10 @@ export class PipelineManager {
     this.layerSignatures.clear()
   }
 
-  private applyLayerState(pass: LayerPassNode, layer: ShaderLabLayerConfig): void {
+  private applyLayerState(
+    pass: LayerPassNode,
+    layer: ShaderLabLayerConfig
+  ): void {
     pass.enabled = layer.visible
     pass.updateOpacity(clampUnit(layer.opacity))
     pass.updateBlendMode(layer.blendMode)
@@ -291,7 +364,9 @@ export class PipelineManager {
           })
           .catch((error) => {
             this.onRuntimeError?.(
-              error instanceof Error ? error.message : "Failed to load media asset.",
+              error instanceof Error
+                ? error.message
+                : "Failed to load media asset."
             )
             this.dirty = true
           })
@@ -302,9 +377,14 @@ export class PipelineManager {
 
     if (pass instanceof LivePass) {
       const facingMode =
-        typeof layer.params.facingMode === "string" ? layer.params.facingMode : "user"
+        typeof layer.params.facingMode === "string"
+          ? layer.params.facingMode
+          : "user"
 
-      if (facingMode !== pass.getFacingMode() || !pass.needsContinuousRender()) {
+      if (
+        facingMode !== pass.getFacingMode() ||
+        !pass.needsContinuousRender()
+      ) {
         void pass
           .startCamera(facingMode)
           .then(() => {
@@ -312,7 +392,9 @@ export class PipelineManager {
           })
           .catch((error) => {
             this.onRuntimeError?.(
-              error instanceof Error ? error.message : "Failed to start live camera input.",
+              error instanceof Error
+                ? error.message
+                : "Failed to start live camera input."
             )
             this.dirty = true
           })
@@ -342,7 +424,10 @@ export class PipelineManager {
       }
     }
 
-    if (layer.kind === "source" && (layer.type === "image" || layer.type === "video")) {
+    if (
+      layer.kind === "source" &&
+      (layer.type === "image" || layer.type === "video")
+    ) {
       return new MediaPass(layer.id)
     }
 
@@ -363,7 +448,7 @@ export class PipelineManager {
     }
 
     throw new Error(
-      `Layer "${layer.name}" of type "${layer.type}" is not supported by the package runtime yet.`,
+      `Layer "${layer.name}" of type "${layer.type}" is not supported by the package runtime yet.`
     )
   }
 }

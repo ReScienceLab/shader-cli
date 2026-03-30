@@ -1,11 +1,16 @@
 import withBundleAnalyzer from "@next/bundle-analyzer"
 import type { NextConfig } from "next"
 
+const shaderLabRuntimeEntry = "./packages/shader-lab-react/dist/src/index.js"
+
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   reactCompiler: true,
   typedRoutes: true,
   turbopack: {
+    resolveAlias: {
+      "@basementstudio/shader-lab": shaderLabRuntimeEntry,
+    },
     rules: {
       "*.svg": {
         loaders: [
@@ -117,6 +122,12 @@ const nextConfig: NextConfig = {
   ],
   redirects: async () => [],
   rewrites: async () => [],
+  webpack: (config) => {
+    config.resolve ??= {}
+    config.resolve.alias ??= {}
+    config.resolve.alias["@basementstudio/shader-lab"] = shaderLabRuntimeEntry
+    return config
+  },
 }
 
 const bundleAnalyzerPlugin = withBundleAnalyzer({
