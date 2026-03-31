@@ -26,8 +26,10 @@ const SUPPORTED_SHADER_EXPORT_LAYER_TYPES = new Set<LayerType>([
   "live",
   "custom-shader",
   "ascii",
+  "directional-blur",
   "ink",
   "pattern",
+  "posterize",
   "crt",
   "chromatic-aberration",
   "dithering",
@@ -37,6 +39,7 @@ const SUPPORTED_SHADER_EXPORT_LAYER_TYPES = new Set<LayerType>([
   "particle-grid",
   "pixel-sorting",
   "pixelation",
+  "slice",
 ] as const)
 
 const UNSUPPORTED_SHADER_EXPORT_LAYER_TYPES = new Set<LayerType>([
@@ -48,6 +51,7 @@ const UNSUPPORTED_SHADER_EXPORT_LAYER_TYPES = new Set<LayerType>([
 type SupportedShaderExportLayerType = Extract<
   LayerType,
   | "ascii"
+  | "directional-blur"
   | "crt"
   | "chromatic-aberration"
   | "custom-shader"
@@ -63,6 +67,8 @@ type SupportedShaderExportLayerType = Extract<
   | "pattern"
   | "pixelation"
   | "pixel-sorting"
+  | "posterize"
+  | "slice"
   | "text"
   | "video"
 >

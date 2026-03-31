@@ -33,6 +33,7 @@ import type { AssetKind, EditorAsset, EditorLayer } from "@/types/editor"
 
 type AddLayerAction =
   | "ascii"
+  | "directional-blur"
   | "chromatic-aberration"
   | "crt"
   | "custom-shader"
@@ -48,6 +49,8 @@ type AddLayerAction =
   | "pixelation"
   | "pattern"
   | "pixel-sorting"
+  | "posterize"
+  | "slice"
   | "text"
   | "video"
 type LayerAction = "delete" | "reset"
@@ -133,6 +136,15 @@ const addLayerOptions = [
     label: (
       <span className={menuButtonClassName}>
         <SparkleIcon size={14} weight="regular" />
+        Directional Blur
+      </span>
+    ),
+    value: "directional-blur",
+  },
+  {
+    label: (
+      <span className={menuButtonClassName}>
+        <SparkleIcon size={14} weight="regular" />
         Pattern
       </span>
     ),
@@ -187,10 +199,28 @@ const addLayerOptions = [
     label: (
       <span className={menuButtonClassName}>
         <SparkleIcon size={14} weight="regular" />
+        Posterize
+      </span>
+    ),
+    value: "posterize",
+  },
+  {
+    label: (
+      <span className={menuButtonClassName}>
+        <SparkleIcon size={14} weight="regular" />
         Pixel Sorting
       </span>
     ),
     value: "pixel-sorting",
+  },
+  {
+    label: (
+      <span className={menuButtonClassName}>
+        <SparkleIcon size={14} weight="regular" />
+        Slice
+      </span>
+    ),
+    value: "slice",
   },
   {
     label: (
@@ -564,6 +594,8 @@ export function LayerSidebar() {
       handleAddCustomShader()
     } else if (action === "ascii") {
       handleAddAscii()
+    } else if (action === "directional-blur") {
+      addLayer("directional-blur")
     } else if (action === "pattern") {
       addLayer("pattern")
     } else if (action === "crt") {
@@ -574,8 +606,12 @@ export function LayerSidebar() {
       addLayer("particle-grid")
     } else if (action === "pixelation") {
       addLayer("pixelation")
+    } else if (action === "posterize") {
+      addLayer("posterize")
     } else if (action === "pixel-sorting") {
       addLayer("pixel-sorting")
+    } else if (action === "slice") {
+      addLayer("slice")
     } else if (action === "edge-detect") {
       addLayer("edge-detect")
     } else if (action === "displacement-map") {

@@ -14,14 +14,17 @@ export type SourceLayerType = (typeof SOURCE_LAYER_TYPES)[number]
 
 export const EFFECT_LAYER_TYPES = [
   "ascii",
+  "directional-blur",
   "ink",
   "pattern",
+  "posterize",
   "crt",
   "dithering",
   "halftone",
   "particle-grid",
   "pixelation",
   "pixel-sorting",
+  "slice",
   "blur",
   "edge-detect",
   "displacement-map",

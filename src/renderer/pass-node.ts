@@ -34,8 +34,8 @@ export class PassNode {
   private readonly opacityUniform: Node
   private blendMode = "normal"
   private compositeMode: LayerCompositeMode = "filter"
-  private maskSource: string = "luminance"
-  private maskMode: string = "multiply"
+  private maskSource = "luminance"
+  private maskMode = "multiply"
   private maskInvert = false
 
   constructor(layerId: string) {

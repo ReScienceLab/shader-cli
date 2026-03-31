@@ -1961,6 +1961,59 @@ const pixelationParams = [
   },
 ] as const satisfies ParameterDefinitions
 
+const directionalBlurParams = [
+  {
+    defaultValue: "linear",
+    key: "mode",
+    label: "Mode",
+    options: [
+      { label: "Linear", value: "linear" },
+      { label: "Radial", value: "radial" },
+    ],
+    type: "select",
+  },
+  {
+    defaultValue: 18,
+    key: "strength",
+    label: "Strength",
+    max: 96,
+    min: 0,
+    step: 0.5,
+    type: "number",
+    unit: "px",
+  },
+  {
+    defaultValue: 8,
+    key: "samples",
+    label: "Samples",
+    max: 16,
+    min: 1,
+    step: 1,
+    type: "number",
+  },
+  {
+    defaultValue: 0,
+    key: "angle",
+    label: "Angle",
+    max: 360,
+    min: 0,
+    step: 1,
+    type: "number",
+    unit: "°",
+    visibleWhen: { key: "mode", equals: "linear" },
+  },
+  {
+    defaultValue: [0.5, 0.5] as [number, number],
+    key: "center",
+    label: "Center",
+    max: 1,
+    min: 0,
+    step: 0.01,
+    type: "vec2",
+    visibleWhen: { key: "mode", equals: "radial" },
+  },
+] as const satisfies ParameterDefinitions
+
 const pixelSortingParams = [
   {
     defaultValue: 0.25,
@@ -2015,6 +2068,37 @@ const pixelSortingParams = [
     min: 0,
     step: 0.01,
     type: "number",
+  },
+] as const satisfies ParameterDefinitions
+
+const posterizeParams = [
+  {
+    defaultValue: 5,
+    key: "levels",
+    label: "Levels",
+    max: 16,
+    min: 2,
+    step: 1,
+    type: "number",
+  },
+  {
+    defaultValue: 1,
+    key: "gamma",
+    label: "Gamma",
+    max: 2.5,
+    min: 0.4,
+    step: 0.01,
+    type: "number",
+  },
+  {
+    defaultValue: "rgb",
+    key: "mode",
+    label: "Mode",
+    options: [
+      { label: "RGB", value: "rgb" },
+      { label: "Luma", value: "luma" },
+    ],
+    type: "select",
   },
 ] as const satisfies ParameterDefinitions
 
@@ -2443,12 +2527,89 @@ const blurParams = [
   },
 ] as const satisfies ParameterDefinitions
 
+const sliceParams = [
+  {
+    defaultValue: 180,
+    key: "amount",
+    label: "Amount",
+    max: 480,
+    min: 0,
+    step: 1,
+    type: "number",
+    unit: "px",
+  },
+  {
+    defaultValue: 28,
+    key: "sliceHeight",
+    label: "Slice Height",
+    max: 240,
+    min: 2,
+    step: 1,
+    type: "number",
+    unit: "px",
+  },
+  {
+    defaultValue: 120,
+    key: "blockWidth",
+    label: "Block Width",
+    max: 640,
+    min: 8,
+    step: 1,
+    type: "number",
+    unit: "px",
+  },
+  {
+    defaultValue: 0.58,
+    key: "density",
+    label: "Density",
+    max: 1,
+    min: 0,
+    step: 0.01,
+    type: "number",
+  },
+  {
+    defaultValue: 0.18,
+    key: "dispersion",
+    label: "Dispersion",
+    max: 0.5,
+    min: 0,
+    step: 0.01,
+    type: "number",
+  },
+  {
+    defaultValue: 0.2,
+    key: "speed",
+    label: "Speed",
+    max: 2,
+    min: 0,
+    step: 0.01,
+    type: "number",
+  },
+  {
+    defaultValue: "right",
+    key: "direction",
+    label: "Direction",
+    options: [
+      { label: "Right", value: "right" },
+      { label: "Left", value: "left" },
+      { label: "Both", value: "both" },
+    ],
+    type: "select",
+  },
+] as const satisfies ParameterDefinitions
+
 const layerDefinitions: Record<LayerType, LayerDefinition> = {
   ascii: {
     defaultName: "ASCII",
     kind: "effect",
     params: asciiParams,
     type: "ascii",
+  },
+  "directional-blur": {
+    defaultName: "Directional Blur",
+    kind: "effect",
+    params: directionalBlurParams,
+    type: "directional-blur",
   },
   blur: {
     defaultName: "Blur",
@@ -2516,6 +2677,12 @@ const layerDefinitions: Record<LayerType, LayerDefinition> = {
     params: particleGridParams,
     type: "particle-grid",
   },
+  posterize: {
+    defaultName: "Posterize",
+    kind: "effect",
+    params: posterizeParams,
+    type: "posterize",
+  },
   image: {
     assetKind: "image",
     defaultName: "Image",
@@ -2547,6 +2714,12 @@ const layerDefinitions: Record<LayerType, LayerDefinition> = {
     kind: "effect",
     params: pixelationParams,
     type: "pixelation",
+  },
+  slice: {
+    defaultName: "Slice",
+    kind: "effect",
+    params: sliceParams,
+    type: "slice",
   },
   video: {
     assetKind: "video",

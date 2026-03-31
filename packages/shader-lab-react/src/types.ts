@@ -17,6 +17,7 @@ export type ShaderLabSourceLayerType =
 
 export type ShaderLabEffectLayerType =
   | "ascii"
+  | "directional-blur"
   | "chromatic-aberration"
   | "crt"
   | "displacement-map"
@@ -28,6 +29,8 @@ export type ShaderLabEffectLayerType =
   | "pattern"
   | "pixelation"
   | "pixel-sorting"
+  | "posterize"
+  | "slice"
 
 export type ShaderLabLayerType =
   | ShaderLabEffectLayerType

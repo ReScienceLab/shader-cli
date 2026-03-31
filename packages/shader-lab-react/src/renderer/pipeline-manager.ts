@@ -6,6 +6,7 @@ import { AsciiPass } from "./ascii-pass"
 import { ChromaticAberrationPass } from "./chromatic-aberration-pass"
 import { CrtPass } from "./crt-pass"
 import { CustomShaderPass } from "./custom-shader-pass"
+import { DirectionalBlurPass } from "./directional-blur-pass"
 import { DisplacementMapPass } from "./displacement-map-pass"
 import { DitheringPass } from "./dithering-pass"
 import { EdgeDetectPass } from "./edge-detect-pass"
@@ -17,8 +18,10 @@ import { MediaPass } from "./media-pass"
 import { ParticleGridPass } from "./particle-grid-pass"
 import type { PassNode } from "./pass-node"
 import { PatternPass } from "./pattern-pass"
+import { PosterizePass } from "./posterize-pass"
 import { PixelSortingPass } from "./pixel-sorting-pass"
 import { PixelationPass } from "./pixelation-pass"
+import { SlicePass } from "./slice-pass"
 import { TextPass } from "./text-pass"
 
 type LayerPassNode =
@@ -26,6 +29,7 @@ type LayerPassNode =
   | ChromaticAberrationPass
   | CrtPass
   | CustomShaderPass
+  | DirectionalBlurPass
   | DisplacementMapPass
   | DitheringPass
   | EdgeDetectPass
@@ -39,6 +43,8 @@ type LayerPassNode =
   | PatternPass
   | PixelationPass
   | PixelSortingPass
+  | PosterizePass
+  | SlicePass
   | TextPass
 
 const RENDER_TARGET_OPTIONS = {
@@ -423,6 +429,8 @@ export class PipelineManager {
       switch (layer.type) {
         case "ascii":
           return new AsciiPass(layer.id)
+        case "directional-blur":
+          return new DirectionalBlurPass(layer.id)
         case "crt":
           return new CrtPass(layer.id)
         case "chromatic-aberration":
@@ -443,8 +451,12 @@ export class PipelineManager {
           return new PatternPass(layer.id)
         case "pixelation":
           return new PixelationPass(layer.id)
+        case "posterize":
+          return new PosterizePass(layer.id)
         case "pixel-sorting":
           return new PixelSortingPass(layer.id)
+        case "slice":
+          return new SlicePass(layer.id)
       }
     }
 

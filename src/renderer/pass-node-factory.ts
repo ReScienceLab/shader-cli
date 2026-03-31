@@ -1,6 +1,7 @@
 import { AsciiPass } from "@/renderer/ascii-pass"
 import { ChromaticAberrationPass } from "@/renderer/chromatic-aberration-pass"
 import { CrtPass } from "@/renderer/crt-pass"
+import { DirectionalBlurPass } from "@/renderer/directional-blur-pass"
 import { DisplacementMapPass } from "@/renderer/displacement-map-pass"
 import { DitheringPass } from "@/renderer/dithering-pass"
 import { EdgeDetectPass } from "@/renderer/edge-detect-pass"
@@ -9,8 +10,10 @@ import { InkPass } from "@/renderer/ink-pass"
 import { ParticleGridPass } from "@/renderer/particle-grid-pass"
 import { PassNode } from "@/renderer/pass-node"
 import { PatternPass } from "@/renderer/pattern-pass"
+import { PosterizePass } from "@/renderer/posterize-pass"
 import { PixelSortingPass } from "@/renderer/pixel-sorting-pass"
 import { PixelationPass } from "@/renderer/pixelation-pass"
+import { SlicePass } from "@/renderer/slice-pass"
 import type { EffectLayerType } from "@/types/editor"
 
 export function createPassNode(
@@ -20,6 +23,8 @@ export function createPassNode(
   switch (type) {
     case "ascii":
       return new AsciiPass(layerId)
+    case "directional-blur":
+      return new DirectionalBlurPass(layerId)
     case "crt":
       return new CrtPass(layerId)
     case "chromatic-aberration":
@@ -40,8 +45,12 @@ export function createPassNode(
       return new ParticleGridPass(layerId)
     case "pixelation":
       return new PixelationPass(layerId)
+    case "posterize":
+      return new PosterizePass(layerId)
     case "pixel-sorting":
       return new PixelSortingPass(layerId)
+    case "slice":
+      return new SlicePass(layerId)
     default:
       return new PassNode(layerId)
   }
