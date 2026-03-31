@@ -1,6 +1,10 @@
 import { create } from "zustand"
 import { getLayerDefinition } from "@/lib/editor/config/layer-registry"
 import {
+  getDefaultProjectLayers,
+  getDefaultProjectSelectedLayerId,
+} from "@/lib/editor/default-project"
+import {
   clampLayerAdjustments,
   cloneLayer,
   createLayer,
@@ -322,8 +326,8 @@ function getNeighborSelection(
 
 export const useLayerStore = create<LayerStore>((set, get) => ({
   hoveredLayerId: null,
-  layers: [],
-  selectedLayerId: null,
+  layers: getDefaultProjectLayers(),
+  selectedLayerId: getDefaultProjectSelectedLayerId(),
 
   addLayer: (type, insertIndex) => {
     const existingLayers = get().layers
