@@ -9,7 +9,9 @@ import { CustomShaderPass } from "./custom-shader-pass"
 import { DirectionalBlurPass } from "./directional-blur-pass"
 import { DisplacementMapPass } from "./displacement-map-pass"
 import { DitheringPass } from "./dithering-pass"
+import { EchoPass } from "./echo-pass"
 import { EdgeDetectPass } from "./edge-detect-pass"
+import { FlutedGlassPass } from "./fluted-glass-pass"
 import { GradientPass } from "./gradient-pass"
 import { HalftonePass } from "./halftone-pass"
 import { InkPass } from "./ink-pass"
@@ -18,10 +20,12 @@ import { MediaPass } from "./media-pass"
 import { ParticleGridPass } from "./particle-grid-pass"
 import type { PassNode } from "./pass-node"
 import { PatternPass } from "./pattern-pass"
+import { PlotterPass } from "./plotter-pass"
 import { PosterizePass } from "./posterize-pass"
 import { PixelSortingPass } from "./pixel-sorting-pass"
 import { PixelationPass } from "./pixelation-pass"
 import { SlicePass } from "./slice-pass"
+import { SmearPass } from "./smear-pass"
 import { TextPass } from "./text-pass"
 
 type LayerPassNode =
@@ -32,7 +36,9 @@ type LayerPassNode =
   | DirectionalBlurPass
   | DisplacementMapPass
   | DitheringPass
+  | EchoPass
   | EdgeDetectPass
+  | FlutedGlassPass
   | GradientPass
   | HalftonePass
   | InkPass
@@ -43,8 +49,10 @@ type LayerPassNode =
   | PatternPass
   | PixelationPass
   | PixelSortingPass
+  | PlotterPass
   | PosterizePass
   | SlicePass
+  | SmearPass
   | TextPass
 
 const RENDER_TARGET_OPTIONS = {
@@ -439,8 +447,12 @@ export class PipelineManager {
           return new DisplacementMapPass(layer.id)
         case "dithering":
           return new DitheringPass(layer.id)
+        case "echo":
+          return new EchoPass(layer.id)
         case "edge-detect":
           return new EdgeDetectPass(layer.id)
+        case "fluted-glass":
+          return new FlutedGlassPass(layer.id)
         case "halftone":
           return new HalftonePass(layer.id)
         case "ink":
@@ -451,12 +463,16 @@ export class PipelineManager {
           return new PatternPass(layer.id)
         case "pixelation":
           return new PixelationPass(layer.id)
+        case "plotter":
+          return new PlotterPass(layer.id)
         case "posterize":
           return new PosterizePass(layer.id)
         case "pixel-sorting":
           return new PixelSortingPass(layer.id)
         case "slice":
           return new SlicePass(layer.id)
+        case "smear":
+          return new SmearPass(layer.id)
       }
     }
 

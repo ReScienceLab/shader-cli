@@ -22,15 +22,19 @@ export type ShaderLabEffectLayerType =
   | "crt"
   | "displacement-map"
   | "dithering"
+  | "echo"
   | "edge-detect"
+  | "fluted-glass"
   | "halftone"
   | "ink"
   | "particle-grid"
   | "pattern"
   | "pixelation"
   | "pixel-sorting"
+  | "plotter"
   | "posterize"
   | "slice"
+  | "smear"
 
 export type ShaderLabLayerType =
   | ShaderLabEffectLayerType

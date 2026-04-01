@@ -16,7 +16,9 @@ export type AddLayerAction =
   | "custom-shader"
   | "displacement-map"
   | "dithering"
+  | "echo"
   | "edge-detect"
+  | "fluted-glass"
   | "gradient"
   | "halftone"
   | "image"
@@ -26,8 +28,10 @@ export type AddLayerAction =
   | "pixelation"
   | "pattern"
   | "pixel-sorting"
+  | "plotter"
   | "posterize"
   | "slice"
+  | "smear"
   | "text"
   | "video"
 
@@ -138,6 +142,13 @@ const EFFECT_ITEMS: readonly EffectItem[] = [
     value: "posterize",
   },
   {
+    category: "core",
+    description:
+      "Pen-plotter aesthetic with hatching, crosshatching, and ink simulation.",
+    label: "Plotter",
+    value: "plotter",
+  },
+  {
     category: "distort",
     description:
       "Smears pixels linearly or radially for motion, focus, or depth.",
@@ -184,6 +195,27 @@ const EFFECT_ITEMS: readonly EffectItem[] = [
     label: "Chromatic Aberration",
     previewSrc: "/examples/chromatic-aberration.webp",
     value: "chromatic-aberration",
+  },
+  {
+    category: "distort",
+    description:
+      "Blur that ramps from sharp to soft across a controllable range.",
+    label: "Progressive Blur",
+    value: "smear",
+  },
+  {
+    category: "distort",
+    description:
+      "Offset copies with opacity decay for motion trails and afterimages.",
+    label: "Echo",
+    value: "echo",
+  },
+  {
+    category: "distort",
+    description:
+      "Ribbed lenticular glass distortion with subtle chromatic split.",
+    label: "Fluted Glass",
+    value: "fluted-glass",
   },
 ] as const
 
