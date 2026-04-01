@@ -89,6 +89,8 @@ export class PipelineManager {
   private passMap = new Map<string, LayerPassNode>()
   private passes: LayerPassNode[] = []
   private layerSignatures = new Map<string, string>()
+  private compilingPasses = new Set<string>()
+  private compiledVersions = new Map<string, number>()
   private dirty = true
   private width: number
   private height: number
@@ -155,6 +157,8 @@ export class PipelineManager {
       pass.dispose()
       this.passMap.delete(layerId)
       this.layerSignatures.delete(layerId)
+      this.compilingPasses.delete(layerId)
+      this.compiledVersions.delete(layerId)
       this.dirty = true
     }
 
@@ -174,9 +178,14 @@ export class PipelineManager {
       }
 
       if (this.layerSignatures.get(layerId) !== signature) {
+        const versionBefore = pass.getMaterialVersion()
         this.layerSignatures.set(layerId, signature)
         this.applyLayerState(pass, renderableLayer)
         this.dirty = true
+
+        if (pass.getMaterialVersion() !== versionBefore) {
+          this.scheduleCompile(pass)
+        }
       }
 
       orderedPasses.push(pass)
@@ -192,7 +201,9 @@ export class PipelineManager {
   }
 
   render(time: number, delta: number): boolean {
-    const activePasses = this.passes.filter((pass) => pass.enabled)
+    const activePasses = this.passes.filter(
+      (pass) => pass.enabled && !this.compilingPasses.has(pass.layerId)
+    )
     const needsContinuousRender = activePasses.some((pass) =>
       pass.needsContinuousRender()
     )
@@ -296,6 +307,8 @@ export class PipelineManager {
     this.passMap.clear()
     this.passes = []
     this.layerSignatures.clear()
+    this.compilingPasses.clear()
+    this.compiledVersions.clear()
   }
 
   private applyLayerState(
@@ -312,6 +325,7 @@ export class PipelineManager {
       renderableLayer.layer.saturation
     )
     pass.updateParams(renderableLayer.params)
+    pass.flushColorNode()
 
     if (pass instanceof MediaPass) {
       const asset = renderableLayer.asset
@@ -349,6 +363,29 @@ export class PipelineManager {
           })
       }
     }
+  }
+
+  private scheduleCompile(pass: LayerPassNode): void {
+    const version = pass.getMaterialVersion()
+    if (this.compiledVersions.get(pass.layerId) === version) {
+      return
+    }
+
+    this.compilingPasses.add(pass.layerId)
+    const { scene, camera } = pass.getCompileTarget()
+    const renderer = this.renderer as unknown as {
+      compileAsync(scene: THREE.Scene, camera: THREE.Camera): Promise<void>
+    }
+    renderer
+      .compileAsync(scene, camera)
+      .then(() => {
+        this.compilingPasses.delete(pass.layerId)
+        this.compiledVersions.set(pass.layerId, pass.getMaterialVersion())
+        this.dirty = true
+      })
+      .catch(() => {
+        this.compilingPasses.delete(pass.layerId)
+      })
   }
 
   private createPass(layer: EditorLayer): LayerPassNode {
