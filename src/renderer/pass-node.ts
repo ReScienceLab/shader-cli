@@ -181,6 +181,7 @@ export class PassNode {
       float(sourceNode.g),
       float(sourceNode.b),
     )
+    const sourceAlpha = clamp(float(sourceNode.a), float(0), float(1))
     const luma = float(sourceColor.x)
       .mul(float(0.2126))
       .add(float(sourceColor.y).mul(float(0.7152)))
@@ -229,7 +230,7 @@ export class PassNode {
 
     return vec4(
       clamp(rotated, vec3(float(0), float(0), float(0)), vec3(float(1), float(1), float(1))),
-      float(1),
+      sourceAlpha,
     )
   }
 }

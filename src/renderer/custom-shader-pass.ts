@@ -101,7 +101,7 @@ export class CustomShaderPass extends PassNode {
           ? clamp(float(outputNode.a), float(0), float(1))
           : float(1)
       const clampedRgb = clamp(
-        (outputNode.rgb ?? vec3(outputNode)).mul(outputAlpha),
+        outputNode.rgb ?? vec3(outputNode),
         vec3(float(0), float(0), float(0)),
         vec3(float(1), float(1), float(1))
       )
