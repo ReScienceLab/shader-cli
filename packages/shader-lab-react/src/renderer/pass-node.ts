@@ -37,6 +37,7 @@ export class PassNode {
   private maskSource = "luminance"
   private maskMode = "multiply"
   private maskInvert = false
+  private colorNodeDirty = false
 
   constructor(layerId: string) {
     this.layerId = layerId
@@ -81,8 +82,7 @@ export class PassNode {
     }
 
     this.blendMode = blendMode
-    this.rebuildColorNode()
-    this.material.needsUpdate = true
+    this.colorNodeDirty = true
     return true
   }
 
@@ -92,8 +92,7 @@ export class PassNode {
     }
 
     this.compositeMode = compositeMode
-    this.rebuildColorNode()
-    this.material.needsUpdate = true
+    this.colorNodeDirty = true
     return true
   }
 
@@ -108,9 +107,18 @@ export class PassNode {
     this.maskInvert = config.invert
 
     if (structuralChange) {
-      this.rebuildColorNode()
-      this.material.needsUpdate = true
+      this.colorNodeDirty = true
     }
+  }
+
+  flushColorNode(): void {
+    if (!this.colorNodeDirty) {
+      return
+    }
+
+    this.colorNodeDirty = false
+    this.rebuildColorNode()
+    this.material.needsUpdate = true
   }
 
   updateLayerColorAdjustments(hue: number, saturation: number): void {
@@ -143,6 +151,10 @@ export class PassNode {
     return this.material.version
   }
 
+  getCompileTarget(): { scene: THREE.Scene; camera: THREE.Camera } {
+    return { scene: this.scene, camera: this.camera }
+  }
+
   protected beforeRender(_time: number, _delta: number): void {
     // Default pass has no per-frame work.
   }
@@ -153,6 +165,7 @@ export class PassNode {
 
   protected rebuildEffectNode(): void {
     this.effectNode = this.buildEffectNode()
+    this.colorNodeDirty = false
     this.rebuildColorNode()
     this.material.needsUpdate = true
   }

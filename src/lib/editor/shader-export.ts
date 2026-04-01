@@ -36,11 +36,14 @@ const SUPPORTED_SHADER_EXPORT_LAYER_TYPES = new Set<LayerType>([
   "dithering",
   "displacement-map",
   "edge-detect",
+  "fluted-glass",
   "halftone",
   "particle-grid",
   "pixel-sorting",
   "pixelation",
+  "plotter",
   "slice",
+  "smear",
 ] as const)
 
 const UNSUPPORTED_SHADER_EXPORT_LAYER_TYPES = new Set<LayerType>([
@@ -59,6 +62,7 @@ type SupportedShaderExportLayerType = Extract<
   | "displacement-map"
   | "dithering"
   | "edge-detect"
+  | "fluted-glass"
   | "gradient"
   | "halftone"
   | "image"
@@ -68,10 +72,12 @@ type SupportedShaderExportLayerType = Extract<
   | "pattern"
   | "pixelation"
   | "pixel-sorting"
+  | "plotter"
   | "posterize"
-  | "threshold"
   | "slice"
+  | "smear"
   | "text"
+  | "threshold"
   | "video"
 >
 
