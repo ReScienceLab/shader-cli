@@ -8,19 +8,16 @@ import {
   PlusIcon,
 } from "@phosphor-icons/react"
 import { useCallback, useEffect, useRef, useState } from "react"
+import { GlassPanel } from "@/components/ui/glass-panel"
+import { IconButton } from "@/components/ui/icon-button"
+import { Typography } from "@/components/ui/typography"
 import {
   applyEditorHistorySnapshot,
   buildEditorHistorySnapshot,
   buildEditorHistorySnapshotFromState,
   getHistorySnapshotSignature,
 } from "@/lib/editor/history"
-import {
-  applyZoomAtPoint,
-  getNextZoomStep,
-} from "@/lib/editor/view-transform"
-import { GlassPanel } from "@/components/ui/glass-panel"
-import { IconButton } from "@/components/ui/icon-button"
-import { Typography } from "@/components/ui/typography"
+import { applyZoomAtPoint, getNextZoomStep } from "@/lib/editor/view-transform"
 import {
   registerHistoryShortcuts,
   useEditorStore,
@@ -48,9 +45,9 @@ export function EditorTopBar() {
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false)
   const applyingHistoryRef = useRef(false)
   const committedSnapshotRef = useRef(buildEditorHistorySnapshot())
-  const pendingBaseSnapshotRef = useRef<ReturnType<typeof buildEditorHistorySnapshot> | null>(
-    null,
-  )
+  const pendingBaseSnapshotRef = useRef<ReturnType<
+    typeof buildEditorHistorySnapshot
+  > | null>(null)
   const latestSnapshotRef = useRef(buildEditorHistorySnapshot())
   const historyTimerRef = useRef<number | null>(null)
 
@@ -99,7 +96,7 @@ export function EditorTopBar() {
         historyTimerRef.current = null
       }, HISTORY_COMMIT_DEBOUNCE_MS)
     },
-    [flushPendingHistory],
+    [flushPendingHistory]
   )
 
   const handleUndo = useCallback(() => {
@@ -136,55 +133,59 @@ export function EditorTopBar() {
 
   useEffect(() => {
     const unregisterShortcuts = registerHistoryShortcuts(handleUndo, handleRedo)
-    const unsubscribeLayers = useLayerStore.subscribe((state, previousState) => {
-      if (applyingHistoryRef.current) {
-        syncHistorySnapshotRefs()
-        return
+    const unsubscribeLayers = useLayerStore.subscribe(
+      (state, previousState) => {
+        if (applyingHistoryRef.current) {
+          syncHistorySnapshotRefs()
+          return
+        }
+
+        const previousSnapshot = buildEditorHistorySnapshotFromState(
+          previousState,
+          useTimelineStore.getState()
+        )
+        const nextSnapshot = buildEditorHistorySnapshotFromState(
+          state,
+          useTimelineStore.getState()
+        )
+
+        if (
+          getHistorySnapshotSignature(previousSnapshot) ===
+          getHistorySnapshotSignature(nextSnapshot)
+        ) {
+          return
+        }
+
+        scheduleHistoryCommit(nextSnapshot)
       }
+    )
 
-      const previousSnapshot = buildEditorHistorySnapshotFromState(
-        previousState,
-        useTimelineStore.getState(),
-      )
-      const nextSnapshot = buildEditorHistorySnapshotFromState(
-        state,
-        useTimelineStore.getState(),
-      )
+    const unsubscribeTimeline = useTimelineStore.subscribe(
+      (state, previousState) => {
+        if (applyingHistoryRef.current) {
+          syncHistorySnapshotRefs()
+          return
+        }
 
-      if (
-        getHistorySnapshotSignature(previousSnapshot) ===
-        getHistorySnapshotSignature(nextSnapshot)
-      ) {
-        return
+        const previousSnapshot = buildEditorHistorySnapshotFromState(
+          useLayerStore.getState(),
+          previousState
+        )
+        const nextSnapshot = buildEditorHistorySnapshotFromState(
+          useLayerStore.getState(),
+          state
+        )
+
+        if (
+          getHistorySnapshotSignature(previousSnapshot) ===
+          getHistorySnapshotSignature(nextSnapshot)
+        ) {
+          return
+        }
+
+        scheduleHistoryCommit(nextSnapshot)
       }
-
-      scheduleHistoryCommit(nextSnapshot)
-    })
-
-    const unsubscribeTimeline = useTimelineStore.subscribe((state, previousState) => {
-      if (applyingHistoryRef.current) {
-        syncHistorySnapshotRefs()
-        return
-      }
-
-      const previousSnapshot = buildEditorHistorySnapshotFromState(
-        useLayerStore.getState(),
-        previousState,
-      )
-      const nextSnapshot = buildEditorHistorySnapshotFromState(
-        useLayerStore.getState(),
-        state,
-      )
-
-      if (
-        getHistorySnapshotSignature(previousSnapshot) ===
-        getHistorySnapshotSignature(nextSnapshot)
-      ) {
-        return
-      }
-
-      scheduleHistoryCommit(nextSnapshot)
-    })
+    )
 
     return () => {
       unregisterShortcuts()
@@ -199,7 +200,12 @@ export function EditorTopBar() {
 
   function applyZoomStep(direction: "in" | "out") {
     const nextZoom = getNextZoomStep(zoom, direction)
-    const nextState = applyZoomAtPoint(zoom, panOffset, { x: 0, y: 0 }, nextZoom)
+    const nextState = applyZoomAtPoint(
+      zoom,
+      panOffset,
+      { x: 0, y: 0 },
+      nextZoom
+    )
     setZoom(nextState.zoom)
     setPan(nextState.panOffset.x, nextState.panOffset.y)
   }

@@ -11,6 +11,7 @@ import { Reorder, useDragControls } from "motion/react"
 import {
   type ChangeEvent,
   memo,
+  type MouseEvent as ReactMouseEvent,
   type ReactNode,
   type PointerEvent as ReactPointerEvent,
   useMemo,
@@ -152,7 +153,10 @@ type LayerListItemProps = {
   layerActionKey: number
   onLayerAction: (layerId: string, action: LayerAction) => void
   onRelinkPick: (layer: EditorLayer) => void
-  onSelectLayer: (layerId: string) => void
+  onSelectLayer: (
+    layerId: string,
+    event: ReactMouseEvent<HTMLButtonElement>
+  ) => void
   onSetLayerVisibility: (layerId: string, visible: boolean) => void
 }
 
@@ -218,7 +222,7 @@ const LayerListItem = memo(function LayerListItem({
 
         <button
           className="grid min-w-0 grid-cols-[28px_minmax(0,1fr)] items-center gap-[var(--ds-space-2)] bg-transparent p-0 text-left text-inherit"
-          onClick={() => onSelectLayer(layer.id)}
+          onClick={(event) => onSelectLayer(layer.id, event)}
           type="button"
         >
           <div
@@ -304,17 +308,20 @@ export function LayerSidebar() {
 
   const layers = useLayerStore((state) => state.layers)
   const hoveredLayerId = useLayerStore((state) => state.hoveredLayerId)
+  const selectedLayerIds = useLayerStore((state) => state.selectedLayerIds)
   const selectedLayerId = useLayerStore((state) => state.selectedLayerId)
   const addLayer = useLayerStore((state) => state.addLayer)
-  const removeLayer = useLayerStore((state) => state.removeLayer)
+  const removeLayers = useLayerStore((state) => state.removeLayers)
   const replaceState = useLayerStore((state) => state.replaceState)
   const resetLayerParams = useLayerStore((state) => state.resetLayerParams)
-  const selectLayer = useLayerStore((state) => state.selectLayer)
+  const selectLayerWithModifiers = useLayerStore(
+    (state) => state.selectLayerWithModifiers
+  )
   const setLayerAsset = useLayerStore((state) => state.setLayerAsset)
   const setLayerRuntimeError = useLayerStore(
     (state) => state.setLayerRuntimeError
   )
-  const setLayerVisibility = useLayerStore((state) => state.setLayerVisibility)
+  const setLayersVisibility = useLayerStore((state) => state.setLayersVisibility)
   const assets = useAssetStore((state) => state.assets)
   const loadAsset = useAssetStore((state) => state.loadAsset)
   const removeAsset = useAssetStore((state) => state.removeAsset)
@@ -357,10 +364,16 @@ export function LayerSidebar() {
   }
 
   function handleLayerAction(layerId: string, action: LayerAction) {
+    const targetLayerIds = selectedLayerIds.includes(layerId)
+      ? selectedLayerIds
+      : [layerId]
+
     if (action === "delete") {
-      removeLayer(layerId)
+      removeLayers(targetLayerIds)
     } else {
-      resetLayerParams(layerId)
+      targetLayerIds.forEach((targetLayerId) => {
+        resetLayerParams(targetLayerId)
+      })
     }
 
     setLayerActionSelectKeys((current) => ({
@@ -452,7 +465,25 @@ export function LayerSidebar() {
   }
 
   function handleReorder(nextLayers: EditorLayer[]) {
-    replaceState(nextLayers, selectedLayerId, hoveredLayerId)
+    replaceState(nextLayers, selectedLayerId, hoveredLayerId, selectedLayerIds)
+  }
+
+  function handleSelectLayer(
+    layerId: string,
+    event: ReactMouseEvent<HTMLButtonElement>
+  ) {
+    selectLayerWithModifiers(layerId, {
+      additive: event.metaKey || event.ctrlKey,
+      range: event.shiftKey,
+    })
+  }
+
+  function handleSetLayerVisibility(layerId: string, visible: boolean) {
+    const targetLayerIds = selectedLayerIds.includes(layerId)
+      ? selectedLayerIds
+      : [layerId]
+
+    setLayersVisibility(targetLayerIds, visible)
   }
 
   return (
@@ -522,7 +553,7 @@ export function LayerSidebar() {
               ? (assetsById.get(layer.assetId) ?? null)
               : null
             const hasMissingAsset = Boolean(layer.assetId && !asset)
-            const isSelected = selectedLayerId === layer.id
+            const isSelected = selectedLayerIds.includes(layer.id)
 
             return (
               <LayerListItem
@@ -534,8 +565,8 @@ export function LayerSidebar() {
                 layerActionKey={layerActionSelectKeys[layer.id] ?? 0}
                 onLayerAction={handleLayerAction}
                 onRelinkPick={handleRelinkPick}
-                onSelectLayer={selectLayer}
-                onSetLayerVisibility={setLayerVisibility}
+                onSelectLayer={handleSelectLayer}
+                onSetLayerVisibility={handleSetLayerVisibility}
               />
             )
           })}

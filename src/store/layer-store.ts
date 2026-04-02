@@ -28,7 +28,9 @@ import { DEFAULT_MASK_CONFIG } from "@/types/editor"
 export interface LayerStoreState {
   hoveredLayerId: string | null
   layers: EditorLayer[]
+  selectedLayerIds: string[]
   selectedLayerId: string | null
+  selectionAnchorId: string | null
 }
 
 export interface LayerStoreActions {
@@ -38,15 +40,22 @@ export interface LayerStoreActions {
   getRenderableLayers: () => EditorLayer[]
   getSelectedLayer: () => EditorLayer | null
   removeLayer: (id: string) => void
+  removeLayers: (ids: string[]) => void
   renameLayer: (id: string, name: string) => void
   replaceState: (
     layers: EditorLayer[],
     selectedLayerId?: string | null,
-    hoveredLayerId?: string | null
+    hoveredLayerId?: string | null,
+    selectedLayerIds?: string[]
   ) => void
   reorderLayers: (fromIndex: number, toIndex: number) => void
   resetLayerParams: (id: string) => void
   selectLayer: (id: string | null) => void
+  selectLayerRange: (id: string) => void
+  selectLayerWithModifiers: (
+    id: string,
+    options?: { additive?: boolean; range?: boolean }
+  ) => void
   setHoveredLayer: (id: string | null) => void
   setLayerAsset: (id: string, assetId: string | null) => void
   setLayerBlendMode: (id: string, blendMode: BlendMode) => void
@@ -59,10 +68,13 @@ export interface LayerStoreActions {
   setLayerRuntimeError: (id: string, error: string | null) => void
   setLayerSaturation: (id: string, saturation: number) => void
   setLayerVisibility: (id: string, visible: boolean) => void
+  setLayersVisibility: (ids: string[], visible: boolean) => void
   updateLayerParam: (id: string, key: string, value: ParameterValue) => void
 }
 
 export type LayerStore = LayerStoreState & LayerStoreActions
+
+const DEFAULT_SELECTED_LAYER_ID = getDefaultProjectSelectedLayerId()
 
 function getGradientNoiseDefaults(noiseType: string): {
   warpAmount: number
@@ -324,10 +336,25 @@ function getNeighborSelection(
   return nextLayer?.id ?? null
 }
 
+function getSelectionAfterRemoval(
+  layers: EditorLayer[],
+  removedIndices: number[]
+): string | null {
+  if (layers.length === 0 || removedIndices.length === 0) {
+    return null
+  }
+
+  return getNeighborSelection(layers, Math.min(...removedIndices))
+}
+
 export const useLayerStore = create<LayerStore>((set, get) => ({
   hoveredLayerId: null,
   layers: getDefaultProjectLayers(),
-  selectedLayerId: getDefaultProjectSelectedLayerId(),
+  selectedLayerIds: DEFAULT_SELECTED_LAYER_ID
+    ? [DEFAULT_SELECTED_LAYER_ID]
+    : [],
+  selectedLayerId: DEFAULT_SELECTED_LAYER_ID,
+  selectionAnchorId: DEFAULT_SELECTED_LAYER_ID,
 
   addLayer: (type, insertIndex) => {
     const existingLayers = get().layers
@@ -348,7 +375,9 @@ export const useLayerStore = create<LayerStore>((set, get) => ({
 
       return {
         layers,
+        selectedLayerIds: [nextLayer.id],
         selectedLayerId: nextLayer.id,
+        selectionAnchorId: nextLayer.id,
       }
     })
 
@@ -358,23 +387,55 @@ export const useLayerStore = create<LayerStore>((set, get) => ({
   },
 
   removeLayer: (id) => {
-    set((state) => {
-      const removedIndex = state.layers.findIndex((layer) => layer.id === id)
+    get().removeLayers([id])
+  },
 
-      if (removedIndex === -1) {
+  removeLayers: (ids) => {
+    const idSet = new Set(ids)
+
+    if (idSet.size === 0) {
+      return
+    }
+
+    set((state) => {
+      const removedIndices = state.layers.flatMap((layer, index) =>
+        idSet.has(layer.id) ? [index] : []
+      )
+
+      if (removedIndices.length === 0) {
         return state
       }
 
-      const layers = state.layers.filter((layer) => layer.id !== id)
+      const layers = state.layers.filter((layer) => !idSet.has(layer.id))
+      const selectedLayerIds = state.selectedLayerIds.filter(
+        (selectedId) => !idSet.has(selectedId)
+      )
+
+      const nextSelectedLayerId =
+        selectedLayerIds.find(
+          (selectedId) => selectedId === state.selectedLayerId
+        ) ??
+        selectedLayerIds.at(-1) ??
+        getSelectionAfterRemoval(layers, removedIndices)
+      let nextSelectedLayerIds: string[] = []
+
+      if (nextSelectedLayerId) {
+        nextSelectedLayerIds =
+          selectedLayerIds.length > 0 ? selectedLayerIds : [nextSelectedLayerId]
+      }
 
       return {
         hoveredLayerId:
-          state.hoveredLayerId === id ? null : state.hoveredLayerId,
+          state.hoveredLayerId && idSet.has(state.hoveredLayerId)
+            ? null
+            : state.hoveredLayerId,
         layers,
-        selectedLayerId:
-          state.selectedLayerId === id
-            ? getNeighborSelection(layers, removedIndex)
-            : state.selectedLayerId,
+        selectedLayerIds: nextSelectedLayerIds,
+        selectedLayerId: nextSelectedLayerId,
+        selectionAnchorId:
+          state.selectionAnchorId && idSet.has(state.selectionAnchorId)
+            ? nextSelectedLayerId
+            : state.selectionAnchorId,
       }
     })
   },
@@ -396,7 +457,9 @@ export const useLayerStore = create<LayerStore>((set, get) => ({
 
       return {
         layers,
+        selectedLayerIds: [duplicatedLayer.id],
         selectedLayerId: duplicatedLayer.id,
+        selectionAnchorId: duplicatedLayer.id,
       }
     })
 
@@ -429,7 +492,87 @@ export const useLayerStore = create<LayerStore>((set, get) => ({
   },
 
   selectLayer: (selectedLayerId) => {
-    set({ selectedLayerId })
+    set({
+      selectedLayerIds: selectedLayerId ? [selectedLayerId] : [],
+      selectedLayerId,
+      selectionAnchorId: selectedLayerId,
+    })
+  },
+
+  selectLayerRange: (selectedLayerId) => {
+    get().selectLayerWithModifiers(selectedLayerId, { range: true })
+  },
+
+  selectLayerWithModifiers: (selectedLayerId, options = {}) => {
+    const { additive = false, range = false } = options
+
+    set((state) => {
+      const targetIndex = state.layers.findIndex(
+        (layer) => layer.id === selectedLayerId
+      )
+
+      if (targetIndex === -1) {
+        return state
+      }
+
+      if (range) {
+        const anchorId =
+          state.selectionAnchorId ?? state.selectedLayerId ?? selectedLayerId
+        const anchorIndex = state.layers.findIndex(
+          (layer) => layer.id === anchorId
+        )
+
+        if (anchorIndex === -1) {
+          return {
+            selectedLayerIds: [selectedLayerId],
+            selectedLayerId,
+            selectionAnchorId: selectedLayerId,
+          }
+        }
+
+        const rangeIds = state.layers
+          .slice(
+            Math.min(anchorIndex, targetIndex),
+            Math.max(anchorIndex, targetIndex) + 1
+          )
+          .map((layer) => layer.id)
+
+        return {
+          selectedLayerIds: additive
+            ? Array.from(new Set([...state.selectedLayerIds, ...rangeIds]))
+            : rangeIds,
+          selectedLayerId,
+          selectionAnchorId: anchorId,
+        }
+      }
+
+      if (additive) {
+        const isSelected = state.selectedLayerIds.includes(selectedLayerId)
+        const selectedLayerIds = isSelected
+          ? state.selectedLayerIds.filter((id) => id !== selectedLayerId)
+          : [...state.selectedLayerIds, selectedLayerId]
+        let nextSelectedLayerId: string | null = selectedLayerId
+
+        if (isSelected) {
+          nextSelectedLayerId =
+            state.selectedLayerId === selectedLayerId
+              ? (selectedLayerIds.at(-1) ?? null)
+              : state.selectedLayerId
+        }
+
+        return {
+          selectedLayerIds,
+          selectedLayerId: nextSelectedLayerId,
+          selectionAnchorId: selectedLayerId,
+        }
+      }
+
+      return {
+        selectedLayerIds: [selectedLayerId],
+        selectedLayerId,
+        selectionAnchorId: selectedLayerId,
+      }
+    })
   },
 
   setHoveredLayer: (hoveredLayerId) => {
@@ -451,9 +594,19 @@ export const useLayerStore = create<LayerStore>((set, get) => ({
   },
 
   setLayerVisibility: (id, visible) => {
+    get().setLayersVisibility([id], visible)
+  },
+
+  setLayersVisibility: (ids, visible) => {
+    const idSet = new Set(ids)
+
+    if (idSet.size === 0) {
+      return
+    }
+
     set((state) => ({
       layers: state.layers.map((layer) =>
-        layer.id === id ? { ...layer, visible } : layer
+        idSet.has(layer.id) ? { ...layer, visible } : layer
       ),
     }))
   },
@@ -666,14 +819,40 @@ export const useLayerStore = create<LayerStore>((set, get) => ({
     }))
   },
 
-  replaceState: (layers, selectedLayerId = null, hoveredLayerId = null) => {
+  replaceState: (
+    layers,
+    selectedLayerId = null,
+    hoveredLayerId = null,
+    selectedLayerIds = []
+  ) => {
+    const normalizedSelectedLayerIds = (selectedLayerIds ?? []).filter((id) =>
+      layers.some((layer) => layer.id === id)
+    )
+    let nextSelectedLayerIds: string[] = []
+
+    if (normalizedSelectedLayerIds.length > 0) {
+      nextSelectedLayerIds = normalizedSelectedLayerIds
+    } else if (selectedLayerId) {
+      nextSelectedLayerIds = [selectedLayerId]
+    }
+
     set({
       hoveredLayerId,
       layers: cloneLayerList(layers).map((layer) => ({
         ...layer,
         maskConfig: layer.maskConfig ?? { ...DEFAULT_MASK_CONFIG },
       })),
-      selectedLayerId,
+      selectedLayerIds: nextSelectedLayerIds,
+      selectedLayerId:
+        (selectedLayerId &&
+          nextSelectedLayerIds.find((id) => id === selectedLayerId)) ??
+        nextSelectedLayerIds.at(-1) ??
+        null,
+      selectionAnchorId:
+        (selectedLayerId &&
+          nextSelectedLayerIds.find((id) => id === selectedLayerId)) ??
+        nextSelectedLayerIds.at(-1) ??
+        null,
     })
   },
 

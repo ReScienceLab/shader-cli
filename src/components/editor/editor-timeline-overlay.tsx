@@ -19,7 +19,16 @@ import {
   useRef,
   useState,
 } from "react"
+import { GlassPanel } from "@/components/ui/glass-panel"
+import { IconButton } from "@/components/ui/icon-button"
+import { Typography } from "@/components/ui/typography"
+import { cn } from "@/lib/cn"
 import { getLayerDefinition } from "@/lib/editor/config/layer-registry"
+import { useEditorStore, useLayerStore, useTimelineStore } from "@/store"
+import {
+  createLayerPropertyBinding,
+  createParamBinding,
+} from "@/store/timeline-store"
 import type {
   AnimatedPropertyBinding,
   EditorLayer,
@@ -28,15 +37,6 @@ import type {
   TimelineTrack,
 } from "@/types/editor"
 import { TIMELINE_INTERPOLATIONS } from "@/types/editor"
-import { cn } from "@/lib/cn"
-import { GlassPanel } from "@/components/ui/glass-panel"
-import { IconButton } from "@/components/ui/icon-button"
-import { Typography } from "@/components/ui/typography"
-import { useEditorStore, useLayerStore, useTimelineStore } from "@/store"
-import {
-  createLayerPropertyBinding,
-  createParamBinding,
-} from "@/store/timeline-store"
 
 type TimelinePropertyItem = {
   binding: AnimatedPropertyBinding
@@ -846,7 +846,9 @@ export function EditorTimelineOverlay() {
                               <button
                                 aria-label={`Keyframe at ${formatSeconds(keyframe.time)}`}
                                 className="group absolute top-[11px] inline-flex h-[22px] w-[22px] -translate-x-1/2 items-center justify-center bg-transparent p-0 text-inherit cursor-grab active:cursor-grabbing"
-                                data-selected={selectedKeyframeId === keyframe.id}
+                                data-selected={
+                                  selectedKeyframeId === keyframe.id
+                                }
                                 key={keyframe.id}
                                 onPointerDown={(event) => {
                                   event.preventDefault()
@@ -910,7 +912,6 @@ export function EditorTimelineOverlay() {
                       />
                     </div>
                   </div>
-
                 </div>
 
                 {selectedTrack ? (
@@ -959,9 +960,7 @@ export function EditorTimelineOverlay() {
                                   key={option.value}
                                   value={option.value}
                                 >
-                                  <BaseSelect.ItemText
-                                    className="block font-[var(--ds-font-mono)] text-[11px] leading-[14px]"
-                                  >
+                                  <BaseSelect.ItemText className="block font-[var(--ds-font-mono)] text-[11px] leading-[14px]">
                                     {option.label}
                                   </BaseSelect.ItemText>
                                 </BaseSelect.Item>

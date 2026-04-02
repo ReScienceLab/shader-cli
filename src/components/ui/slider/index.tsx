@@ -3,8 +3,8 @@
 import { Slider as BaseSlider } from "@base-ui/react/slider"
 import {
   type CSSProperties,
-  type PointerEvent as ReactPointerEvent,
   type ReactNode,
+  type PointerEvent as ReactPointerEvent,
   useEffect,
   useEffectEvent,
   useRef,
@@ -12,7 +12,10 @@ import {
 } from "react"
 import { cn } from "@/lib/cn"
 
-type SliderProps = Omit<BaseSlider.Root.Props<number>, "children" | "className"> & {
+type SliderProps = Omit<
+  BaseSlider.Root.Props<number>,
+  "children" | "className"
+> & {
   className?: string
   label?: ReactNode
   valueFormatOptions?: Intl.NumberFormatOptions
@@ -44,22 +47,6 @@ export function Slider({
   const controlRef = useRef<HTMLDivElement | null>(null)
   const [isVisualDragging, setIsVisualDragging] = useState(false)
   const [pullOffset, setPullOffset] = useState(0)
-  let initialValue = min
-
-  if (typeof defaultValue === "number") {
-    initialValue = defaultValue
-  }
-
-  if (typeof value === "number") {
-    initialValue = value
-  }
-  const [, setCurrentValueState] = useState(initialValue)
-
-  useEffect(() => {
-    if (typeof value === "number") {
-      setCurrentValueState(value)
-    }
-  }, [value])
 
   const updatePullOffset = useEffectEvent((clientX: number) => {
     const control = controlRef.current
@@ -127,10 +114,6 @@ export function Slider({
     nextValue: number,
     eventDetails: BaseSlider.Root.ChangeEventDetails
   ) => {
-    if (typeof value !== "number") {
-      setCurrentValueState(nextValue)
-    }
-
     onValueChange?.(nextValue, eventDetails)
   }
 
@@ -158,10 +141,11 @@ export function Slider({
         <BaseSlider.Value className="shrink-0 text-right font-[var(--ds-font-mono)] text-[11px] leading-[14px] text-[var(--ds-color-text-secondary)]">
           {(formattedValues, values) => {
             const rawValue = values[0] ?? 0
-            const formattedValue =
-              valueFormatOptions
-                ? new Intl.NumberFormat(locale, valueFormatOptions).format(rawValue)
-                : (formattedValues[0] ?? rawValue.toString())
+            const formattedValue = valueFormatOptions
+              ? new Intl.NumberFormat(locale, valueFormatOptions).format(
+                  rawValue
+                )
+              : (formattedValues[0] ?? rawValue.toString())
 
             return `${valuePrefix ?? ""}${formattedValue}${valueSuffix ?? ""}`
           }}
@@ -176,7 +160,7 @@ export function Slider({
         <BaseSlider.Track className="relative h-1 flex-1 rounded-[2px] bg-white/10">
           <BaseSlider.Indicator className="h-full rounded-[2px] bg-white/25" />
         </BaseSlider.Track>
-        <BaseSlider.Thumb className="relative h-3 w-4 overflow-visible transition-[transform,outline-offset] duration-120 ease-[var(--ease-out-cubic)] active:scale-[0.96] data-[dragging]:scale-[0.96] focus-visible:outline-none data-[disabled]:opacity-45">
+        <BaseSlider.Thumb className="relative h-3 w-4 overflow-visible transition-[transform,outline-offset] duration-120 ease-[var(--ease-out-cubic)] focus-visible:outline-none active:scale-[0.96] data-[dragging]:scale-[0.96] data-[disabled]:opacity-45">
           <span
             className="block h-full w-full rounded-[var(--ds-radius-thumb)] border-2 border-white/15 bg-white/85 shadow-[var(--ds-shadow-knob)] transition-[background-color,box-shadow,transform] duration-[160ms,160ms,260ms] ease-[var(--ease-out-cubic),var(--ease-out-cubic),cubic-bezier(0.34,1.56,0.64,1)] will-change-transform hover:bg-white/92 focus-visible:shadow-[var(--ds-shadow-knob),0_0_0_3px_rgb(255_255_255_/_0.12)]"
             style={{
