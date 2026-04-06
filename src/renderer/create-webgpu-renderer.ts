@@ -31,6 +31,10 @@ export async function createWebGPURenderer(
       renderer.setClearColor("#0a0d10", 1)
     },
 
+    hasPendingCompilations() {
+      return pipeline?.hasPendingCompilations() ?? false
+    },
+
     resize(size: Size, pixelRatio: number) {
       renderer.setPixelRatio(pixelRatio)
       renderer.setSize(size.width, size.height, false)

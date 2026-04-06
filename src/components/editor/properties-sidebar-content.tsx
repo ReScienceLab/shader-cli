@@ -10,7 +10,11 @@ import { Slider } from "@/components/ui/slider"
 import { Toggle } from "@/components/ui/toggle"
 import { Typography } from "@/components/ui/typography"
 import { cn } from "@/lib/cn"
-import { CUSTOM_SHADER_ENTRY_EXPORT } from "@/lib/editor/custom-shader/shared"
+import {
+  CUSTOM_EFFECT_STARTER,
+  CUSTOM_SHADER_ENTRY_EXPORT,
+  CUSTOM_SHADER_STARTER,
+} from "@/lib/editor/custom-shader/shared"
 import { formatCustomShaderSource } from "@/renderer/custom-shader-runtime"
 import { useTimelineStore } from "@/store/timeline-store"
 import type {
@@ -64,6 +68,7 @@ function CustomShaderSection({
   updateLayerParam: (id: string, key: string, value: ParameterValue) => void
   values: Record<string, ParameterValue>
 }) {
+  const effectMode = values.effectMode === true
   const persistedSource =
     typeof values.sourceCode === "string" ? values.sourceCode : ""
   const persistedEntryExport =
@@ -109,6 +114,25 @@ function CustomShaderSection({
     ]
   )
 
+  const handleToggleEffectMode = useCallback(
+    (next: boolean) => {
+      updateLayerParam(layerId, "effectMode", next)
+
+      const trimmed = persistedSource.trim()
+      const isDefaultSource =
+        !trimmed ||
+        trimmed === CUSTOM_SHADER_STARTER.trim() ||
+        trimmed === CUSTOM_EFFECT_STARTER.trim()
+      if (isDefaultSource) {
+        const starter = next ? CUSTOM_EFFECT_STARTER : CUSTOM_SHADER_STARTER
+        setDraftSource(starter)
+        updateLayerParam(layerId, "sourceCode", starter)
+        updateLayerParam(layerId, "sourceRevision", persistedRevision + 1)
+      }
+    },
+    [layerId, persistedRevision, persistedSource, updateLayerParam]
+  )
+
   return (
     <section className="flex flex-col gap-3 border-t border-[var(--ds-border-divider)] px-4 pt-[14px] pb-4 first:border-t-0">
       <Typography className="uppercase" tone="secondary" variant="overline">
@@ -116,6 +140,17 @@ function CustomShaderSection({
       </Typography>
 
       <div className="flex flex-col gap-[10px]">
+        <div className="grid items-center gap-[10px] [grid-template-columns:minmax(0,1fr)_132px]">
+          <Typography className="min-w-0" tone="secondary" variant="label">
+            Effect Mode
+          </Typography>
+          <Toggle
+            checked={effectMode}
+            className="justify-self-end"
+            onCheckedChange={handleToggleEffectMode}
+          />
+        </div>
+
         <label className="flex flex-col gap-2">
           <Typography className="min-w-0" tone="secondary" variant="label">
             Entry Export

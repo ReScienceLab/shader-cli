@@ -55,6 +55,7 @@ function createLayerSignature(layer: RenderableLayerPass): string {
       typeof layer.params.sourceFileName === "string"
         ? layer.params.sourceFileName
         : "",
+      layer.params.effectMode === true ? "effect" : "source",
     ].join("|")
   }
 
@@ -305,6 +306,10 @@ export class PipelineManager {
     if (changed) {
       this.markDirty()
     }
+  }
+
+  hasPendingCompilations(): boolean {
+    return this.compilingPasses.size > 0
   }
 
   dispose(): void {

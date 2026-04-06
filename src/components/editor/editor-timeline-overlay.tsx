@@ -7,6 +7,7 @@ import {
   CaretUpIcon,
   PauseIcon,
   PlayIcon,
+  SnowflakeIcon,
   StopIcon,
 } from "@phosphor-icons/react"
 import { motion, useReducedMotion } from "motion/react"
@@ -249,22 +250,26 @@ function TimelineTransport({
   currentTime,
   duration,
   expanded,
+  frozen,
   isPlaying,
   loop,
   onDurationChange,
   onStop,
   onToggleExpanded,
+  onToggleFrozen,
   onToggleLoop,
   onTogglePlaying,
 }: {
   currentTime: number
   duration: number
   expanded: boolean
+  frozen: boolean
   isPlaying: boolean
   loop: boolean
   onDurationChange: (value: number) => void
   onStop: () => void
   onToggleExpanded: () => void
+  onToggleFrozen: () => void
   onToggleLoop: () => void
   onTogglePlaying: () => void
 }) {
@@ -295,6 +300,17 @@ function TimelineTransport({
           variant="default"
         >
           <StopIcon size={14} weight="fill" />
+        </IconButton>
+        <IconButton
+          aria-label={frozen ? "Unfreeze frame" : "Freeze frame"}
+          className={cn(
+            "h-7 w-7",
+            frozen && "bg-white/12 text-[var(--ds-color-text-primary)]"
+          )}
+          onClick={onToggleFrozen}
+          variant={frozen ? "active" : "default"}
+        >
+          <SnowflakeIcon size={14} weight={frozen ? "fill" : "regular"} />
         </IconButton>
       </div>
 
@@ -415,6 +431,8 @@ export function EditorTimelineOverlay() {
   )
   const setKeyframeTime = useTimelineStore((state) => state.setKeyframeTime)
   const removeKeyframe = useTimelineStore((state) => state.removeKeyframe)
+  const frozen = useTimelineStore((state) => state.frozen)
+  const setFrozen = useTimelineStore((state) => state.setFrozen)
   const stop = useTimelineStore((state) => state.stop)
   const togglePlaying = useTimelineStore((state) => state.togglePlaying)
 
@@ -655,11 +673,13 @@ export function EditorTimelineOverlay() {
               currentTime={currentTime}
               duration={duration}
               expanded={timelinePanelOpen}
+              frozen={frozen}
               isPlaying={isPlaying}
               loop={loop}
               onDurationChange={setDuration}
               onStop={stop}
               onToggleExpanded={toggleTimelinePanel}
+              onToggleFrozen={() => setFrozen(!frozen)}
               onToggleLoop={() => setLoop(!loop)}
               onTogglePlaying={togglePlaying}
             />

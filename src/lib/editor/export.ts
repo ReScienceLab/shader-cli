@@ -208,7 +208,7 @@ export async function exportVideo(
   outputCanvas.height = clampDimension(options.height)
 
   const renderer = await createExportRenderer(renderCanvas)
-  const stream = outputCanvas.captureStream(options.fps)
+  const stream = outputCanvas.captureStream(0)
   const recorder = new MediaRecorder(stream, {
     mimeType,
     videoBitsPerSecond: getVideoBitrate(options.qualityPreset),
@@ -260,7 +260,12 @@ export async function exportVideo(
         options.aspectPreset,
         projectState.compositionSize
       )
-      await wait(4)
+
+      const videoTrack = stream.getVideoTracks()[0]
+      if (videoTrack && "requestFrame" in videoTrack) {
+        ;(videoTrack as unknown as { requestFrame: () => void }).requestFrame()
+      }
+      await wait(1000 / options.fps)
     }
 
     recorder.stop()
@@ -335,7 +340,20 @@ async function prewarmExportFrame(
   }
 ): Promise<void> {
   await renderFrameToCanvas(renderer, canvas, projectState, options)
-  await wait(48)
+
+  const maxWaitMs = 5_000
+  const pollInterval = 10
+  let elapsed = 0
+
+  while (renderer.hasPendingCompilations() && elapsed < maxWaitMs) {
+    await wait(pollInterval)
+    elapsed += pollInterval
+  }
+
+  await renderFrameToCanvas(renderer, canvas, projectState, options)
+  await waitForRenderedFrame()
+  await renderFrameToCanvas(renderer, canvas, projectState, options)
+  await waitForRenderedFrame()
 }
 
 function cropCanvasToAspect(

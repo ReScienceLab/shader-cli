@@ -113,20 +113,25 @@ export function useEditorRenderer() {
           const layerState = useLayerStore.getState()
           const assetState = useAssetStore.getState()
           const editorState = useEditorStore.getState()
-          const delta = Math.max(0, (now - lastFrameTime) / 1000)
+          const rawDelta = Math.max(0, (now - lastFrameTime) / 1000)
 
           lastFrameTime = now
-          previewTime += delta
 
           let timelineState = useTimelineStore.getState()
+          const frozen = timelineState.frozen
+          const delta = frozen ? 0 : rawDelta
 
-          if (timelineState.isPlaying) {
+          if (!frozen) {
+            previewTime += rawDelta
+          }
+
+          if (timelineState.isPlaying && !frozen) {
             timelineState.advance(delta)
             timelineState = useTimelineStore.getState()
           }
 
-          if (delta > 0) {
-            useMetricsStore.getState().setFps(1 / delta)
+          if (rawDelta > 0) {
+            useMetricsStore.getState().setFps(1 / rawDelta)
           }
 
           const frame = buildRendererFrame({

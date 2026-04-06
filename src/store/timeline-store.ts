@@ -19,7 +19,9 @@ import {
 } from "@/lib/editor/parameter-schema"
 import { getLayerDefinition } from "@/lib/editor/config/layer-registry"
 
-export interface TimelineStoreState extends TimelineStateSnapshot {}
+export interface TimelineStoreState extends TimelineStateSnapshot {
+  frozen: boolean
+}
 
 interface ToggleKeyframeInput {
   binding: AnimatedPropertyBinding
@@ -48,6 +50,7 @@ export interface TimelineStoreActions {
   setCurrentTime: (time: number) => void
   setDuration: (duration: number) => void
   setLoop: (loop: boolean) => void
+  setFrozen: (frozen: boolean) => void
   setPlaying: (playing: boolean) => void
   setSelected: (trackId: string | null, keyframeId?: string | null) => void
   setTrackEnabled: (trackId: string, enabled: boolean) => void
@@ -179,11 +182,19 @@ function cloneTracks(tracks: TimelineTrack[]): TimelineTrack[] {
 export const useTimelineStore = create<TimelineStore>((set, get) => ({
   currentTime: 0,
   duration: DEFAULT_PROJECT_TIMELINE.duration,
+  frozen: false,
   isPlaying: false,
   loop: DEFAULT_PROJECT_TIMELINE.loop,
   selectedKeyframeId: null,
   selectedTrackId: null,
   tracks: DEFAULT_PROJECT_TIMELINE.tracks,
+
+  setFrozen: (frozen) => {
+    set((state) => ({
+      frozen,
+      isPlaying: frozen ? false : state.isPlaying,
+    }))
+  },
 
   setPlaying: (isPlaying) => {
     set({ isPlaying })

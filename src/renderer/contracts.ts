@@ -36,6 +36,7 @@ export interface RendererFrame {
 
 export interface EditorRenderer {
   dispose(): void
+  hasPendingCompilations(): boolean
   initialize(): Promise<void>
   render(frame: RendererFrame): void
   resize(size: Size, pixelRatio: number): void
