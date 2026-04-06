@@ -1,6 +1,7 @@
 import { create } from "zustand"
 import { getDefaultProjectComposition } from "@/lib/editor/default-project"
 import { DEFAULT_CANVAS_SIZE } from "@/lib/editor/layers"
+import type { EditorRenderer } from "@/renderer/contracts"
 import type {
   EditorStateSnapshot,
   RenderScale,
@@ -13,6 +14,7 @@ import { DEFAULT_SCENE_CONFIG } from "@/types/editor"
 const DEFAULT_PROJECT_COMPOSITION = getDefaultProjectComposition()
 
 export interface EditorStoreState extends EditorStateSnapshot {
+  liveRenderer: EditorRenderer | null
   startupPreviewDismissed: boolean
 }
 
@@ -32,6 +34,7 @@ export interface EditorStoreActions {
   setTheme: (theme: "dark" | "light") => void
   setTimelinePanelOpen: (open: boolean) => void
   setSidebarView: (view: SidebarView) => void
+  setLiveRenderer: (renderer: EditorRenderer | null) => void
   setWebGPUStatus: (status: WebGPUStatus, error?: string | null) => void
   setZoom: (zoom: number) => void
   toggleTimelinePanel: () => void
@@ -55,6 +58,7 @@ function clampCanvasDimension(value: number): number {
 export const useEditorStore = create<EditorStore>((set) => ({
   canvasSize: DEFAULT_CANVAS_SIZE,
   immersiveCanvas: false,
+  liveRenderer: null,
   outputSize: DEFAULT_PROJECT_COMPOSITION,
   panOffset: { x: 0, y: 0 },
   renderScale: 1,
@@ -224,6 +228,10 @@ export const useEditorStore = create<EditorStore>((set) => ({
     set((state) => ({
       sceneConfig: { ...state.sceneConfig, ...updates },
     }))
+  },
+
+  setLiveRenderer: (liveRenderer) => {
+    set({ liveRenderer })
   },
 
   setWebGPUStatus: (webgpuStatus, webgpuError = null) => {

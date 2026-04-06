@@ -301,11 +301,13 @@ export function EditorExportDialog({
     setIsWorking(true)
 
     try {
-      const currentTime = useTimelineStore.getState().currentTime
+      const liveRenderer = useEditorStore.getState().liveRenderer
+      const clockTime = useTimelineStore.getState().lastRenderedClockTime
       const blob = await exportStillImage(buildRenderProjectState(), {
         aspectPreset: imageAspect,
+        liveRenderer,
         qualityPreset: imageQuality,
-        time: currentTime,
+        time: clockTime,
         width: imageSize.width,
         height: imageSize.height,
       })

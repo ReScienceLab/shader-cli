@@ -81,8 +81,10 @@ export function useEditorRenderer() {
 
         rendererRef.current = renderer
         await renderer.initialize()
+        editorStore.setLiveRenderer(renderer)
 
         if (isDisposed) {
+          editorStore.setLiveRenderer(null)
           renderer.dispose()
           return
         }
@@ -134,9 +136,12 @@ export function useEditorRenderer() {
             useMetricsStore.getState().setFps(1 / rawDelta)
           }
 
+          const clockTime = timelineState.isPlaying ? timelineState.currentTime : previewTime
+          useTimelineStore.getState().setLastRenderedClockTime(clockTime)
+
           const frame = buildRendererFrame({
             assets: assetState.assets,
-            clockTime: timelineState.isPlaying ? timelineState.currentTime : previewTime,
+            clockTime,
             delta,
             layers: layerState.layers,
             outputSize: editorState.outputSize,
@@ -173,6 +178,7 @@ export function useEditorRenderer() {
         window.cancelAnimationFrame(animationFrameRef.current)
       }
 
+      useEditorStore.getState().setLiveRenderer(null)
       rendererRef.current?.dispose()
       rendererRef.current = null
       setIsReady(false)

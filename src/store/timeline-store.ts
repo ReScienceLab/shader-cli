@@ -21,6 +21,7 @@ import { getLayerDefinition } from "@/lib/editor/config/layer-registry"
 
 export interface TimelineStoreState extends TimelineStateSnapshot {
   frozen: boolean
+  lastRenderedClockTime: number
 }
 
 interface ToggleKeyframeInput {
@@ -51,6 +52,7 @@ export interface TimelineStoreActions {
   setDuration: (duration: number) => void
   setLoop: (loop: boolean) => void
   setFrozen: (frozen: boolean) => void
+  setLastRenderedClockTime: (time: number) => void
   setPlaying: (playing: boolean) => void
   setSelected: (trackId: string | null, keyframeId?: string | null) => void
   setTrackEnabled: (trackId: string, enabled: boolean) => void
@@ -184,6 +186,7 @@ export const useTimelineStore = create<TimelineStore>((set, get) => ({
   duration: DEFAULT_PROJECT_TIMELINE.duration,
   frozen: false,
   isPlaying: false,
+  lastRenderedClockTime: 0,
   loop: DEFAULT_PROJECT_TIMELINE.loop,
   selectedKeyframeId: null,
   selectedTrackId: null,
@@ -194,6 +197,10 @@ export const useTimelineStore = create<TimelineStore>((set, get) => ({
       frozen,
       isPlaying: frozen ? false : state.isPlaying,
     }))
+  },
+
+  setLastRenderedClockTime: (time) => {
+    set({ lastRenderedClockTime: time })
   },
 
   setPlaying: (isPlaying) => {

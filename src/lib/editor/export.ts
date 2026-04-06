@@ -1,6 +1,6 @@
 "use client"
 
-import { buildRendererFrame } from "@/renderer/contracts"
+import { buildRendererFrame, type EditorRenderer } from "@/renderer/contracts"
 import {
   browserSupportsWebGPU,
   createWebGPURenderer,
@@ -42,6 +42,7 @@ type RenderProjectState = {
 
 type StillExportOptions = {
   aspectPreset: ExportAspectPreset
+  liveRenderer?: EditorRenderer | null
   qualityPreset: ExportQualityPreset
   time: number
   type?: string
@@ -145,11 +146,76 @@ export async function exportStillImage(
     width: clampDimension(projectState.compositionSize.width * renderScale),
   }
 
-  const renderCanvas = createHiddenRenderCanvas()
   const outputCanvas = document.createElement("canvas")
   outputCanvas.width = clampDimension(options.width)
   outputCanvas.height = clampDimension(options.height)
 
+  if (options.liveRenderer) {
+    return exportStillWithLiveRenderer(
+      options.liveRenderer,
+      projectState,
+      sourceRenderSize,
+      outputCanvas,
+      options
+    )
+  }
+
+  return exportStillWithNewRenderer(
+    projectState,
+    sourceRenderSize,
+    outputCanvas,
+    options
+  )
+}
+
+async function exportStillWithLiveRenderer(
+  liveRenderer: EditorRenderer,
+  projectState: RenderProjectState,
+  sourceRenderSize: Size,
+  outputCanvas: HTMLCanvasElement,
+  options: StillExportOptions
+): Promise<Blob> {
+  const timelineState = structuredClone(projectState.timeline)
+  timelineState.isPlaying = false
+
+  const frame = buildRendererFrame({
+    assets: projectState.assets,
+    clockTime: options.time,
+    delta: 0,
+    layers: projectState.layers,
+    logicalSize: projectState.compositionSize,
+    outputSize: sourceRenderSize,
+    pixelRatio: 1,
+    sceneConfig: projectState.sceneConfig,
+    timeline: timelineState,
+    viewportSize: sourceRenderSize,
+  })
+
+  const snapshot = liveRenderer.exportFrame(frame, sourceRenderSize)
+
+  cropCanvasToAspect(
+    snapshot,
+    outputCanvas,
+    options.aspectPreset,
+    projectState.compositionSize
+  )
+
+  const blob = await canvasToBlob(outputCanvas, options.type ?? "image/png")
+
+  if (!blob) {
+    throw new Error("Could not build the export image.")
+  }
+
+  return blob
+}
+
+async function exportStillWithNewRenderer(
+  projectState: RenderProjectState,
+  sourceRenderSize: Size,
+  outputCanvas: HTMLCanvasElement,
+  options: StillExportOptions
+): Promise<Blob> {
+  const renderCanvas = createHiddenRenderCanvas()
   const renderer = await createExportRenderer(renderCanvas)
 
   try {
