@@ -59,6 +59,7 @@ type VideoExportOptions = {
   duration: number
   format: VideoExportFormat
   fps: number
+  onProgress?: (progress: { label: string; value: number }) => void
   qualityPreset: ExportQualityPreset
   startTime: number
   width: number
@@ -247,6 +248,11 @@ export async function exportVideo(
   projectState: RenderProjectState,
   options: VideoExportOptions
 ): Promise<Blob> {
+  options.onProgress?.({
+    label: "Preparing export",
+    value: 0.02,
+  })
+
   const support = await getSupportedVideoExportConfig(options.format)
 
   if (!support) {
@@ -285,6 +291,11 @@ export async function exportVideo(
     const totalFrames = Math.max(1, Math.round(options.duration * options.fps))
     const totalDurationUs = Math.max(1, Math.round(options.duration * 1_000_000))
 
+    options.onProgress?.({
+      label: `Rendering frames 0/${totalFrames}`,
+      value: 0.08,
+    })
+
     for (let frameIndex = 0; frameIndex < totalFrames; frameIndex += 1) {
       const time = resolveExportTime(
         options.startTime + frameIndex / options.fps,
@@ -316,7 +327,17 @@ export async function exportVideo(
         Math.max(1, frameEndUs - frameStartUs),
         frameStartUs
       )
+
+      options.onProgress?.({
+        label: `Rendering frames ${frameIndex + 1}/${totalFrames}`,
+        value: 0.08 + ((frameIndex + 1) / totalFrames) * 0.88,
+      })
     }
+
+    options.onProgress?.({
+      label: "Finalizing file",
+      value: 0.98,
+    })
 
     return await encoder.finalize()
   } finally {
