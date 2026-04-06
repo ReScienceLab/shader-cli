@@ -33,6 +33,7 @@ export class MediaPass extends PassNode {
   private loadedUrl: string | null = null
   private videoHandle: VideoHandle | null = null
   private videoTexture: THREE.VideoTexture | null = null
+  private previewFrozen = false
 
   constructor(layerId: string) {
     super(layerId)
@@ -66,6 +67,7 @@ export class MediaPass extends PassNode {
     this.currentTexture = handle.texture
     this.videoHandle = handle
     this.videoTexture = handle.texture
+    void handle.setFrozen(this.previewFrozen)
     this.setTextureAspect(handle.texture)
   }
 
@@ -94,6 +96,16 @@ export class MediaPass extends PassNode {
     if (this.videoHandle) {
       this.videoHandle.setLoop(true)
     }
+  }
+
+  setPreviewFrozen(frozen: boolean): void {
+    this.previewFrozen = frozen
+
+    if (!this.videoHandle) {
+      return
+    }
+
+    void this.videoHandle.setFrozen(frozen)
   }
 
   override render(

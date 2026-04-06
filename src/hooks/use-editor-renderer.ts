@@ -138,6 +138,7 @@ export function useEditorRenderer() {
 
           const clockTime = timelineState.isPlaying ? timelineState.currentTime : previewTime
           useTimelineStore.getState().setLastRenderedClockTime(clockTime)
+          renderer.setPreviewFrozen(frozen)
 
           const frame = buildRendererFrame({
             assets: assetState.assets,

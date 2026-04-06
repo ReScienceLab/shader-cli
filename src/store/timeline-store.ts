@@ -245,9 +245,17 @@ export const useTimelineStore = create<TimelineStore>((set, get) => ({
   },
 
   setCurrentTime: (currentTime) => {
-    set((state) => ({
-      currentTime: clampTime(currentTime, state.duration),
-    }))
+    set((state) => {
+      const nextTime = clampTime(currentTime, state.duration)
+
+      if (Math.abs(nextTime - state.currentTime) <= Number.EPSILON) {
+        return state
+      }
+
+      return {
+        currentTime: nextTime,
+      }
+    })
   },
 
   advance: (delta) => {
@@ -257,6 +265,13 @@ export const useTimelineStore = create<TimelineStore>((set, get) => ({
 
     set((state) => {
       const next = advanceProjectTimeline(state, delta)
+
+      if (
+        Math.abs(next.currentTime - state.currentTime) <= Number.EPSILON &&
+        next.isPlaying === state.isPlaying
+      ) {
+        return state
+      }
 
       return {
         currentTime: next.currentTime,

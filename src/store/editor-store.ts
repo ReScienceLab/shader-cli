@@ -19,8 +19,10 @@ export interface EditorStoreState extends EditorStateSnapshot {
 }
 
 export interface EditorStoreActions {
+  beginInteractiveEdit: () => void
   closeTimelinePanel: () => void
   dismissStartupPreview: () => void
+  endInteractiveEdit: () => void
   enterImmersiveCanvas: () => void
   exitImmersiveCanvas: () => void
   openTimelinePanel: () => void
@@ -32,11 +34,13 @@ export interface EditorStoreActions {
   setRenderScale: (scale: RenderScale) => void
   setSidebarOpen: (side: "left" | "right", open: boolean) => void
   setTheme: (theme: "dark" | "light") => void
+  setTimelineAutoKey: (enabled: boolean) => void
   setTimelinePanelOpen: (open: boolean) => void
   setSidebarView: (view: SidebarView) => void
   setLiveRenderer: (renderer: EditorRenderer | null) => void
   setWebGPUStatus: (status: WebGPUStatus, error?: string | null) => void
   setZoom: (zoom: number) => void
+  toggleTimelineAutoKey: () => void
   toggleTimelinePanel: () => void
   toggleSidebar: (side: "left" | "right") => void
   updateSceneConfig: (updates: Partial<SceneConfig>) => void
@@ -58,6 +62,7 @@ function clampCanvasDimension(value: number): number {
 export const useEditorStore = create<EditorStore>((set) => ({
   canvasSize: DEFAULT_CANVAS_SIZE,
   immersiveCanvas: false,
+  interactiveEditDepth: 0,
   liveRenderer: null,
   outputSize: DEFAULT_PROJECT_COMPOSITION,
   panOffset: { x: 0, y: 0 },
@@ -69,6 +74,7 @@ export const useEditorStore = create<EditorStore>((set) => ({
   },
   sidebarView: "properties",
   theme: "dark",
+  timelineAutoKey: false,
   timelinePanelOpen: false,
   webgpuError: null,
   webgpuStatus: "idle",
@@ -83,6 +89,18 @@ export const useEditorStore = create<EditorStore>((set) => ({
             startupPreviewDismissed: true,
           }
     )
+  },
+
+  beginInteractiveEdit: () => {
+    set((state) => ({
+      interactiveEditDepth: state.interactiveEditDepth + 1,
+    }))
+  },
+
+  endInteractiveEdit: () => {
+    set((state) => ({
+      interactiveEditDepth: Math.max(0, state.interactiveEditDepth - 1),
+    }))
   },
 
   setZoom: (zoom) => {
@@ -152,6 +170,12 @@ export const useEditorStore = create<EditorStore>((set) => ({
     })
   },
 
+  setTimelineAutoKey: (timelineAutoKey) => {
+    set({
+      timelineAutoKey,
+    })
+  },
+
   openTimelinePanel: () => {
     set({
       timelinePanelOpen: true,
@@ -167,6 +191,12 @@ export const useEditorStore = create<EditorStore>((set) => ({
   toggleTimelinePanel: () => {
     set((state) => ({
       timelinePanelOpen: !state.timelinePanelOpen,
+    }))
+  },
+
+  toggleTimelineAutoKey: () => {
+    set((state) => ({
+      timelineAutoKey: !state.timelineAutoKey,
     }))
   },
 

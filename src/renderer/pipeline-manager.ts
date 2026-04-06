@@ -261,6 +261,14 @@ export class PipelineManager {
     return true
   }
 
+  setPreviewFrozen(frozen: boolean): void {
+    for (const pass of this.passMap.values()) {
+      if (pass instanceof MediaPass) {
+        pass.setPreviewFrozen(frozen)
+      }
+    }
+  }
+
   resize(size: Size): void {
     this.width = Math.max(1, size.width)
     this.height = Math.max(1, size.height)

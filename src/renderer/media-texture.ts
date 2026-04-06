@@ -5,6 +5,7 @@ type VideoPlaybackMode = "export" | "live"
 export interface VideoHandle {
   dispose: () => void
   prepareFrame: (time: number) => Promise<void>
+  setFrozen: (frozen: boolean) => Promise<void>
   setLoop: (loop: boolean) => void
   setPlaybackMode: (mode: VideoPlaybackMode) => Promise<void>
   setPlaybackRate: (rate: number) => void
@@ -104,6 +105,7 @@ export function createVideoTexture(url: string): Promise<VideoHandle> {
     video.muted = true
     video.playsInline = true
     let mode: VideoPlaybackMode = "live"
+    let frozen = false
     let loop = true
     let playbackRate = 1
 
@@ -124,6 +126,12 @@ export function createVideoTexture(url: string): Promise<VideoHandle> {
 
           video.loop = loop
           video.playbackRate = playbackRate
+
+          if (frozen) {
+            video.pause()
+            return
+          }
+
           await video.play()
         }
 
@@ -151,6 +159,22 @@ export function createVideoTexture(url: string): Promise<VideoHandle> {
 
             video.currentTime = targetTime
             await waitForSeek(video)
+          },
+          async setFrozen(nextFrozen) {
+            frozen = nextFrozen
+
+            if (mode !== "live") {
+              return
+            }
+
+            if (frozen) {
+              video.pause()
+              return
+            }
+
+            video.loop = loop
+            video.playbackRate = playbackRate
+            await video.play()
           },
           setLoop(nextLoop) {
             loop = nextLoop

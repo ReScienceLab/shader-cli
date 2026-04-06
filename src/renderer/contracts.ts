@@ -43,6 +43,7 @@ export interface EditorRenderer {
   prepareForExportFrame(time: number): Promise<void>
   render(frame: RendererFrame): void
   resize(size: Size, pixelRatio: number): void
+  setPreviewFrozen(frozen: boolean): void
 }
 
 type BuildRendererFrameInput = {

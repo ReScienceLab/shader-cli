@@ -5,6 +5,7 @@ import {
   BezierCurveIcon,
   CaretDownIcon,
   CaretUpIcon,
+  CircleIcon,
   PauseIcon,
   PlayIcon,
   SnowflakeIcon,
@@ -247,6 +248,7 @@ function createTickPositions(duration: number) {
 }
 
 function TimelineTransport({
+  autoKey,
   currentTime,
   duration,
   expanded,
@@ -255,11 +257,13 @@ function TimelineTransport({
   loop,
   onDurationChange,
   onStop,
+  onToggleAutoKey,
   onToggleExpanded,
   onToggleFrozen,
   onToggleLoop,
   onTogglePlaying,
 }: {
+  autoKey: boolean
   currentTime: number
   duration: number
   expanded: boolean
@@ -268,6 +272,7 @@ function TimelineTransport({
   loop: boolean
   onDurationChange: (value: number) => void
   onStop: () => void
+  onToggleAutoKey: () => void
   onToggleExpanded: () => void
   onToggleFrozen: () => void
   onToggleLoop: () => void
@@ -333,6 +338,20 @@ function TimelineTransport({
             Loop
           </Typography>
         </IconButton>
+        <IconButton
+          aria-label={autoKey ? "Disable auto-key" : "Enable auto-key"}
+          className={cn(
+            "h-7 w-auto gap-1.5 px-[10px]",
+            autoKey && "bg-white/12 text-[var(--ds-color-text-primary)]"
+          )}
+          onClick={onToggleAutoKey}
+          variant={autoKey ? "active" : "default"}
+        >
+          <CircleIcon size={10} weight={autoKey ? "fill" : "regular"} />
+          <Typography as="span" tone="secondary" variant="monoSm">
+            Auto-Key
+          </Typography>
+        </IconButton>
       </div>
 
       <span
@@ -342,7 +361,7 @@ function TimelineTransport({
 
       <div className="inline-flex items-center gap-2">
         <Typography as="span" tone="secondary" variant="monoSm">
-          Duration
+          Dur
         </Typography>
         <input
           aria-label="Timeline duration in seconds"
@@ -402,7 +421,11 @@ export function EditorTimelineOverlay() {
   const reduceMotion = useReducedMotion() ?? false
   const immersiveCanvas = useEditorStore((state) => state.immersiveCanvas)
   const timelinePanelOpen = useEditorStore((state) => state.timelinePanelOpen)
+  const timelineAutoKey = useEditorStore((state) => state.timelineAutoKey)
   const closeTimelinePanel = useEditorStore((state) => state.closeTimelinePanel)
+  const toggleTimelineAutoKey = useEditorStore(
+    (state) => state.toggleTimelineAutoKey
+  )
   const toggleTimelinePanel = useEditorStore(
     (state) => state.toggleTimelinePanel
   )
@@ -670,6 +693,7 @@ export function EditorTimelineOverlay() {
             )}
           >
             <TimelineTransport
+              autoKey={timelineAutoKey}
               currentTime={currentTime}
               duration={duration}
               expanded={timelinePanelOpen}
@@ -678,6 +702,7 @@ export function EditorTimelineOverlay() {
               loop={loop}
               onDurationChange={setDuration}
               onStop={stop}
+              onToggleAutoKey={toggleTimelineAutoKey}
               onToggleExpanded={toggleTimelinePanel}
               onToggleFrozen={() => setFrozen(!frozen)}
               onToggleLoop={() => setLoop(!loop)}

@@ -242,6 +242,8 @@ export function SelectedLayerPropertiesContent({
   definitionName,
   expandedParamGroups,
   hue,
+  onInteractionEnd,
+  onInteractionStart,
   layerId,
   layerKind,
   layerName,
@@ -270,6 +272,8 @@ export function SelectedLayerPropertiesContent({
   definitionName: string
   expandedParamGroups: Record<string, boolean>
   hue: number
+  onInteractionEnd?: (() => void) | undefined
+  onInteractionStart?: (() => void) | undefined
   layerId: string
   layerKind: string
   layerName: string
@@ -397,7 +401,9 @@ export function SelectedLayerPropertiesContent({
               )}
               max={100}
               min={0}
+              onInteractionStart={onInteractionStart}
               onValueChange={(value) => setLayerOpacity(layerId, value / 100)}
+              onValueCommitted={() => onInteractionEnd?.()}
               value={opacity * 100}
               valueSuffix="%"
             />
@@ -508,7 +514,9 @@ export function SelectedLayerPropertiesContent({
               )}
               max={180}
               min={-180}
+              onInteractionStart={onInteractionStart}
               onValueChange={(value) => setLayerHue(layerId, value)}
+              onValueCommitted={() => onInteractionEnd?.()}
               value={hue}
             />
 
@@ -519,7 +527,9 @@ export function SelectedLayerPropertiesContent({
               )}
               max={2}
               min={0}
+              onInteractionStart={onInteractionStart}
               onValueChange={(value) => setLayerSaturation(layerId, value)}
+              onValueCommitted={() => onInteractionEnd?.()}
               step={0.01}
               value={saturation}
               valueFormatOptions={{
@@ -623,6 +633,8 @@ export function SelectedLayerPropertiesContent({
                                   definition={param}
                                   key={param.key}
                                   layerId={layerId}
+                                  onInteractionEnd={onInteractionEnd}
+                                  onInteractionStart={onInteractionStart}
                                   onChange={updateLayerParam}
                                   onTimelineKeyframe={onTimelineKeyframe}
                                   reduceMotion={reduceMotion}
@@ -650,6 +662,8 @@ export function SelectedLayerPropertiesContent({
                     definition={param}
                     key={param.key}
                     layerId={layerId}
+                    onInteractionEnd={onInteractionEnd}
+                    onInteractionStart={onInteractionStart}
                     onChange={updateLayerParam}
                     onTimelineKeyframe={onTimelineKeyframe}
                     reduceMotion={reduceMotion}

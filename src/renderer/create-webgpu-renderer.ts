@@ -68,6 +68,10 @@ export async function createWebGPURenderer(
       renderFrame(frame)
     },
 
+    setPreviewFrozen(frozen: boolean) {
+      pipeline?.setPreviewFrozen(frozen)
+    },
+
     async prepareForExportFrame(time: number) {
       await pipeline?.prepareForExportFrame(time)
     },
