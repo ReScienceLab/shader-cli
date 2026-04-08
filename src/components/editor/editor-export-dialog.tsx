@@ -24,6 +24,7 @@ import { GlassPanel } from "@/components/ui/glass-panel"
 import { IconButton } from "@/components/ui/icon-button"
 import { Typography } from "@/components/ui/typography"
 import { cn } from "@/lib/cn"
+import { getEffectiveCompositionSize } from "@/lib/editor/composition"
 import {
   ASPECT_PRESET_LABELS,
   type ExportAspectPreset,
@@ -101,27 +102,10 @@ export function EditorExportDialog({
   const reduceMotion = useReducedMotion() ?? false
   const canvasSize = useEditorStore((state) => state.canvasSize)
   const sceneConfig = useEditorStore((state) => state.sceneConfig)
-  const compositionSize = useMemo(() => {
-    const aspect = sceneConfig.compositionAspect
-    if (aspect === "screen") return canvasSize
-
-    let ratio: number
-    switch (aspect) {
-      case "16:9": ratio = 16 / 9; break
-      case "9:16": ratio = 9 / 16; break
-      case "4:3": ratio = 4 / 3; break
-      case "3:4": ratio = 3 / 4; break
-      case "1:1": ratio = 1; break
-      case "custom": ratio = sceneConfig.compositionWidth / Math.max(sceneConfig.compositionHeight, 1); break
-      default: return canvasSize
-    }
-
-    const viewportAspect = canvasSize.width / Math.max(canvasSize.height, 1)
-    if (ratio > viewportAspect) {
-      return { width: canvasSize.width, height: Math.round(canvasSize.width / ratio) }
-    }
-    return { width: Math.round(canvasSize.height * ratio), height: canvasSize.height }
-  }, [canvasSize, sceneConfig.compositionAspect, sceneConfig.compositionWidth, sceneConfig.compositionHeight])
+  const compositionSize = useMemo(
+    () => getEffectiveCompositionSize(sceneConfig, canvasSize),
+    [canvasSize, sceneConfig]
+  )
   const assets = useAssetStore((state) => state.assets)
   const layers = useLayerStore((state) => state.layers)
   const timelineDuration = useTimelineStore((state) => state.duration)
@@ -177,13 +161,17 @@ export function EditorExportDialog({
   const defaultVideoDuration = useMemo(() => {
     const assetById = new Map(assets.map((asset) => [asset.id, asset]))
     const longestVideoDuration = layers.reduce((longest, layer) => {
-      if (!(layer.kind === "source" && layer.type === "video" && layer.assetId)) {
+      if (
+        !(layer.kind === "source" && layer.type === "video" && layer.assetId)
+      ) {
         return longest
       }
 
       const duration = assetById.get(layer.assetId)?.duration
 
-      return typeof duration === "number" && Number.isFinite(duration) && duration > 0
+      return typeof duration === "number" &&
+        Number.isFinite(duration) &&
+        duration > 0
         ? Math.max(longest, duration)
         : longest
     }, 0)
@@ -375,11 +363,9 @@ export function EditorExportDialog({
     setIsWorking(true)
 
     try {
-      const liveRenderer = useEditorStore.getState().liveRenderer
       const clockTime = useTimelineStore.getState().lastRenderedClockTime
       const blob = await exportStillImage(buildRenderProjectState(), {
         aspectPreset: imageAspect,
-        liveRenderer,
         qualityPreset: imageQuality,
         time: clockTime,
         width: imageSize.width,
@@ -405,6 +391,7 @@ export function EditorExportDialog({
 
     try {
       const startTime = useTimelineStore.getState().currentTime
+      const exportSize = getVideoExportDisplaySize(videoFormat, videoSize)
       const blob = await exportVideo(buildRenderProjectState(), {
         aspectPreset: videoAspect,
         duration: Math.max(0.25, videoDuration),
@@ -423,7 +410,7 @@ export function EditorExportDialog({
         value: 1,
       })
       setStatusMessage(
-        `${videoFormat.toUpperCase()} exported at ${videoSize.width}×${videoSize.height}.`
+        `${videoFormat.toUpperCase()} exported at ${exportSize.width}×${exportSize.height}.`
       )
     } catch (error) {
       setErrorMessage(
@@ -1256,37 +1243,18 @@ function NumberInput({
   )
 }
 
-function getEffectiveCompositionSize() {
-  const { canvasSize, sceneConfig } = useEditorStore.getState()
-  const aspect = sceneConfig.compositionAspect
-  if (aspect === "screen") return canvasSize
-
-  let ratio: number
-  switch (aspect) {
-    case "16:9": ratio = 16 / 9; break
-    case "9:16": ratio = 9 / 16; break
-    case "4:3": ratio = 4 / 3; break
-    case "3:4": ratio = 3 / 4; break
-    case "1:1": ratio = 1; break
-    case "custom": ratio = sceneConfig.compositionWidth / Math.max(sceneConfig.compositionHeight, 1); break
-    default: return canvasSize
-  }
-
-  const viewportAspect = canvasSize.width / Math.max(canvasSize.height, 1)
-  if (ratio > viewportAspect) {
-    return { width: canvasSize.width, height: Math.round(canvasSize.width / ratio) }
-  }
-  return { width: Math.round(canvasSize.height * ratio), height: canvasSize.height }
-}
-
 function buildRenderProjectState() {
   const timelineState = useTimelineStore.getState()
+  const editorState = useEditorStore.getState()
 
   return {
     assets: useAssetStore.getState().assets,
-    compositionSize: getEffectiveCompositionSize(),
+    compositionSize: getEffectiveCompositionSize(
+      editorState.sceneConfig,
+      editorState.canvasSize
+    ),
     layers: useLayerStore.getState().layers,
-    sceneConfig: useEditorStore.getState().sceneConfig,
+    sceneConfig: editorState.sceneConfig,
     timeline: {
       currentTime: timelineState.currentTime,
       duration: timelineState.duration,
@@ -1296,6 +1264,20 @@ function buildRenderProjectState() {
       selectedTrackId: timelineState.selectedTrackId,
       tracks: structuredClone(timelineState.tracks),
     },
+  }
+}
+
+function getVideoExportDisplaySize(
+  format: VideoExportFormat,
+  size: { width: number; height: number }
+) {
+  if (format !== "mp4") {
+    return size
+  }
+
+  return {
+    width: size.width % 2 === 0 ? size.width : Math.max(1, size.width - 1),
+    height: size.height % 2 === 0 ? size.height : Math.max(1, size.height - 1),
   }
 }
 
