@@ -8,6 +8,7 @@ import { useAssetStore } from "@/store/asset-store"
 import { useEditorStore } from "@/store/editor-store"
 import { useLayerStore } from "@/store/layer-store"
 import { useTimelineStore } from "@/store/timeline-store"
+import { getEffectiveCompositionSize } from "@/lib/editor/composition"
 
 export interface LabProjectFile extends ProjectPresetConfig {
   composition: Size
@@ -26,7 +27,10 @@ export function buildLabProjectFile(): LabProjectFile {
       id: asset.id,
       kind: asset.kind,
     })),
-    composition: structuredClone(editorState.canvasSize),
+    composition: getEffectiveCompositionSize(
+      editorState.sceneConfig,
+      editorState.canvasSize
+    ),
     exportedAt: new Date().toISOString(),
     format: "shader-lab",
     layers: structuredClone(layerState.layers),
@@ -114,6 +118,17 @@ export function applyLabProjectFile(
     selectedTrackId: null,
     tracks: projectFile.timeline.tracks,
   })
+
+  const editorStore = useEditorStore.getState()
+  editorStore.updateSceneConfig({
+    compositionAspect: "custom",
+    compositionHeight: projectFile.composition.height,
+    compositionWidth: projectFile.composition.width,
+  })
+  editorStore.setOutputSize(
+    projectFile.composition.width,
+    projectFile.composition.height
+  )
 
   return {
     missingAssetCount: nextLayers.filter(

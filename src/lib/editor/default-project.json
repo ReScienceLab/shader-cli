@@ -178,57 +178,57 @@
       "name": "Gradient",
       "opacity": 1,
       "params": {
-        "preset": "sunset",
-        "activePoints": 4,
-        "point1Color": "#770000",
+        "preset": "neon-glow",
+        "activePoints": 2,
+        "point1Color": "#3D2020",
         "point1Position": [
-          -0.6,
+          0,
+          0
+        ],
+        "point1Weight": 0.6,
+        "point2Color": "#FF0000",
+        "point2Position": [
+          -0.7,
+          -0.5
+        ],
+        "point2Weight": 1.3,
+        "point3Color": "#662626",
+        "point3Position": [
+          0.8,
+          0.3
+        ],
+        "point3Weight": 1.1,
+        "point4Color": "#220033",
+        "point4Position": [
+          0.2,
           -0.8
         ],
-        "point1Weight": 0.8,
-        "point2Color": "#511919",
-        "point2Position": [
-          0.3,
-          0.4
-        ],
-        "point2Weight": 1.2,
-        "point3Color": "#813904",
-        "point3Position": [
-          -1.24,
-          -0.87
-        ],
-        "point3Weight": 0.9,
-        "point4Color": "#020202",
-        "point4Position": [
-          -0.1499999999999999,
-          0.24
-        ],
-        "point4Weight": 1,
-        "point5Color": "#F3E7D0",
+        "point4Weight": 0.9,
+        "point5Color": "#1a0a2e",
         "point5Position": [
-          0.58,
-          -0.76
+          -0.5,
+          0.7
         ],
-        "point5Weight": 0.48,
+        "point5Weight": 1,
         "noiseType": "voronoi",
         "noiseSeed": 93.1,
         "warpAmount": 0.3,
         "warpScale": 3,
-        "warpIterations": 1,
-        "warpDecay": 2.32,
-        "warpBias": 1,
-        "vortexAmount": -1,
+        "warpIterations": 3,
+        "warpDecay": 1,
+        "warpBias": 0.35,
+        "vortexAmount": -0.25,
         "animate": true,
-        "motionAmount": 1,
-        "motionSpeed": 0.88,
+        "motionAmount": 0.81,
+        "motionSpeed": 2,
         "falloff": 3.5,
-        "tonemapMode": "cinematic",
-        "glowStrength": 1,
-        "glowThreshold": 0.3,
+        "tonemapMode": "totos",
+        "glowStrength": 0,
+        "glowThreshold": 0,
         "grainAmount": 0,
-        "vignetteStrength": 0,
-        "vignetteRadius": 1.4,
-        "vignetteSoftness": 0.8
+        "vignetteStrength": 0.1,
+        "vignetteRadius": 1.5,
+        "vignetteSoftness": 1
       },
       "runtimeError": null,
       "saturation": 1.15,
