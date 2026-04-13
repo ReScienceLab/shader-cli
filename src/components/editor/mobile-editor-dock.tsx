@@ -9,7 +9,6 @@ import {
 import type { ComponentType } from "react"
 import { GlassPanel } from "@/components/ui/glass-panel"
 import { Typography } from "@/components/ui/typography"
-import { useIsMobileViewport } from "@/hooks/use-is-mobile-viewport"
 import { cn } from "@/lib/cn"
 import { useEditorStore } from "@/store/editor-store"
 import type { MobileEditorPanel } from "@/types/editor"
@@ -32,14 +31,13 @@ export function MobileEditorDock() {
   const mobilePanel = useEditorStore((state) => state.mobilePanel)
   const setMobilePanel = useEditorStore((state) => state.setMobilePanel)
   const closeTimelinePanel = useEditorStore((state) => state.closeTimelinePanel)
-  const isMobileViewport = useIsMobileViewport()
 
-  if (immersiveCanvas || !isMobileViewport) {
+  if (immersiveCanvas) {
     return null
   }
 
   return (
-    <div className="pointer-events-none fixed right-0 bottom-4 left-0 z-50 flex justify-center px-3">
+    <div className="pointer-events-none fixed right-0 bottom-4 left-0 z-50 flex justify-center px-3 min-[900px]:hidden">
       <GlassPanel
         className="pointer-events-auto grid w-full max-w-[420px] grid-cols-4 gap-1 p-1.5"
         variant="panel"
