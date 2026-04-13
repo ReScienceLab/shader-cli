@@ -516,7 +516,7 @@ export function EditorExportDialog({
     videoExportAbortRef.current = abortController
 
     try {
-      const startTime = useTimelineStore.getState().currentTime
+      const startTime = 0
       const exportSize = getVideoExportDisplaySize(videoFormat, videoSize)
       const blob = await exportVideo(buildRenderProjectState(), {
         abortSignal: abortController.signal,
@@ -1362,11 +1362,15 @@ function DimensionFields({
 }
 
 function NumberInput({
+  disabled = false,
+  formatValue,
   min,
   onChange,
   step,
   value,
 }: {
+  disabled?: boolean
+  formatValue?: ((value: number) => string) | undefined
   min: number
   onChange: (value: number) => void
   step: number
@@ -1375,6 +1379,8 @@ function NumberInput({
   return (
     <EditableNumberInput
       className="min-h-9 rounded-[var(--ds-radius-control)] border border-[var(--ds-border-divider)] bg-[var(--ds-color-surface-control)] px-[10px] py-2 font-[var(--ds-font-mono)] text-[12px] leading-4 text-[var(--ds-color-text-primary)]"
+      disabled={disabled}
+      formatValue={formatValue}
       min={min}
       onChange={onChange}
       step={step}

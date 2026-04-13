@@ -8,7 +8,6 @@ import {
   CircleIcon,
   PauseIcon,
   PlayIcon,
-  SnowflakeIcon,
   StopIcon,
 } from "@phosphor-icons/react"
 import { motion, useReducedMotion } from "motion/react"
@@ -256,14 +255,12 @@ function TimelineTransport({
   duration,
   durationReadOnly,
   expanded,
-  frozen,
   isPlaying,
   loop,
   onDurationChange,
   onStop,
   onToggleAutoKey,
   onToggleExpanded,
-  onToggleFrozen,
   onToggleLoop,
   onTogglePlaying,
 }: {
@@ -272,14 +269,12 @@ function TimelineTransport({
   duration: number
   durationReadOnly: boolean
   expanded: boolean
-  frozen: boolean
   isPlaying: boolean
   loop: boolean
   onDurationChange: (value: number) => void
   onStop: () => void
   onToggleAutoKey: () => void
   onToggleExpanded: () => void
-  onToggleFrozen: () => void
   onToggleLoop: () => void
   onTogglePlaying: () => void
 }) {
@@ -310,17 +305,6 @@ function TimelineTransport({
           variant="default"
         >
           <StopIcon size={14} weight="fill" />
-        </IconButton>
-        <IconButton
-          aria-label={frozen ? "Unfreeze frame" : "Freeze frame"}
-          className={cn(
-            "h-7 w-7",
-            frozen && "bg-white/12 text-[var(--ds-color-text-primary)]"
-          )}
-          onClick={onToggleFrozen}
-          variant={frozen ? "active" : "default"}
-        >
-          <SnowflakeIcon size={14} weight={frozen ? "fill" : "regular"} />
         </IconButton>
       </div>
 
@@ -464,14 +448,13 @@ export function EditorTimelineOverlay() {
   const setCurrentTime = useTimelineStore((state) => state.setCurrentTime)
   const setDuration = useTimelineStore((state) => state.setDuration)
   const setLoop = useTimelineStore((state) => state.setLoop)
+  const setPlaying = useTimelineStore((state) => state.setPlaying)
   const setSelected = useTimelineStore((state) => state.setSelected)
   const setTrackInterpolation = useTimelineStore(
     (state) => state.setTrackInterpolation
   )
   const setKeyframeTime = useTimelineStore((state) => state.setKeyframeTime)
   const removeKeyframe = useTimelineStore((state) => state.removeKeyframe)
-  const frozen = useTimelineStore((state) => state.frozen)
-  const setFrozen = useTimelineStore((state) => state.setFrozen)
   const stop = useTimelineStore((state) => state.stop)
   const togglePlaying = useTimelineStore((state) => state.togglePlaying)
   const derivedVideoDuration = useMemo(
@@ -499,6 +482,7 @@ export function EditorTimelineOverlay() {
   const [focusedPropertyId, setFocusedPropertyId] = useState<string | null>(
     null
   )
+  const previousHasDerivedVideoDurationRef = useRef<boolean | null>(null)
   const scrubSurfaceRef = useRef<HTMLDivElement | null>(null)
   const [dragState, setDragState] = useState<DragState | null>(null)
   const [viewportSize, setViewportSize] = useState({ height: 900, width: 1440 })
@@ -514,6 +498,21 @@ export function EditorTimelineOverlay() {
 
     setDuration(derivedVideoDuration)
   }, [derivedVideoDuration, duration, hasDerivedVideoDuration, setDuration])
+
+  useEffect(() => {
+    const previousHasDerivedVideoDuration =
+      previousHasDerivedVideoDurationRef.current
+
+    if (
+      hasDerivedVideoDuration &&
+      previousHasDerivedVideoDuration !== true &&
+      !isPlaying
+    ) {
+      setPlaying(true)
+    }
+
+    previousHasDerivedVideoDurationRef.current = hasDerivedVideoDuration
+  }, [hasDerivedVideoDuration, isPlaying, setPlaying])
 
   useEffect(() => {
     if (!(timelinePanelOpen && selectedLayer)) {
@@ -745,14 +744,12 @@ export function EditorTimelineOverlay() {
               duration={effectiveDuration}
               durationReadOnly={hasDerivedVideoDuration}
               expanded={timelinePanelOpen}
-              frozen={frozen}
               isPlaying={isPlaying}
               loop={loop}
               onDurationChange={setDuration}
               onStop={stop}
               onToggleAutoKey={toggleTimelineAutoKey}
               onToggleExpanded={toggleTimelinePanel}
-              onToggleFrozen={() => setFrozen(!frozen)}
               onToggleLoop={() => setLoop(!loop)}
               onTogglePlaying={togglePlaying}
             />
