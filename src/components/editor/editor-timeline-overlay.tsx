@@ -27,6 +27,8 @@ import { NumberInput } from "@/components/ui/number-input"
 import { Typography } from "@/components/ui/typography"
 import { cn } from "@/lib/cn"
 import { getLayerDefinition } from "@/lib/editor/config/layer-registry"
+import { getLongestVideoLayerDuration } from "@/lib/editor/timeline-duration"
+import { useAssetStore } from "@/store/asset-store"
 import { useEditorStore, useLayerStore, useTimelineStore } from "@/store"
 import {
   createLayerPropertyBinding,
@@ -252,6 +254,7 @@ function TimelineTransport({
   autoKey,
   currentTime,
   duration,
+  durationReadOnly,
   expanded,
   frozen,
   isPlaying,
@@ -267,6 +270,7 @@ function TimelineTransport({
   autoKey: boolean
   currentTime: number
   duration: number
+  durationReadOnly: boolean
   expanded: boolean
   frozen: boolean
   isPlaying: boolean
@@ -367,8 +371,14 @@ function TimelineTransport({
         <NumberInput
           aria-label="Timeline duration in seconds"
           size={2}
-          className="min-h-7 appearance-none rounded-[var(--ds-radius-icon)] border border-[var(--ds-border-divider)] bg-[var(--ds-color-surface-control)] px-[10px] text-center font-[var(--ds-font-mono)] text-[12px] leading-4 text-[var(--ds-color-text-primary)] outline-none transition-[background-color,border-color] duration-160 ease-[var(--ease-out-cubic)] focus:border-[var(--ds-border-hover)]"
-          formatValue={(value) => Math.trunc(value).toString()}
+          className={cn(
+            "min-h-7 appearance-none rounded-[var(--ds-radius-icon)] border border-[var(--ds-border-divider)] bg-[var(--ds-color-surface-control)] px-[10px] text-center font-[var(--ds-font-mono)] text-[12px] leading-4 text-[var(--ds-color-text-primary)] outline-none transition-[background-color,border-color] duration-160 ease-[var(--ease-out-cubic)] focus:border-[var(--ds-border-hover)]",
+            durationReadOnly && "cursor-not-allowed text-white/55 opacity-60"
+          )}
+          disabled={durationReadOnly}
+          formatValue={(value) =>
+            durationReadOnly ? value.toFixed(2) : Math.trunc(value).toString()
+          }
           max={120}
           min={1}
           onChange={onDurationChange}
@@ -431,11 +441,15 @@ export function EditorTimelineOverlay() {
   const toggleTimelinePanel = useEditorStore(
     (state) => state.toggleTimelinePanel
   )
+  const assets = useAssetStore((state) => state.assets)
+  const layers = useLayerStore((state) => state.layers)
   const selectedLayerId = useLayerStore((state) => state.selectedLayerId)
-  const selectedLayer = useLayerStore((state) =>
+  const selectedLayer = useMemo(
+    () =>
     selectedLayerId
-      ? (state.layers.find((layer) => layer.id === selectedLayerId) ?? null)
-      : null
+      ? (layers.find((layer) => layer.id === selectedLayerId) ?? null)
+      : null,
+    [layers, selectedLayerId]
   )
 
   const currentTime = useTimelineStore((state) => state.currentTime)
@@ -460,6 +474,12 @@ export function EditorTimelineOverlay() {
   const setFrozen = useTimelineStore((state) => state.setFrozen)
   const stop = useTimelineStore((state) => state.stop)
   const togglePlaying = useTimelineStore((state) => state.togglePlaying)
+  const derivedVideoDuration = useMemo(
+    () => getLongestVideoLayerDuration(layers, assets),
+    [assets, layers]
+  )
+  const hasDerivedVideoDuration = derivedVideoDuration !== null
+  const effectiveDuration = derivedVideoDuration ?? duration
 
   const layerTracks = useMemo(
     () =>
@@ -482,7 +502,18 @@ export function EditorTimelineOverlay() {
   const scrubSurfaceRef = useRef<HTMLDivElement | null>(null)
   const [dragState, setDragState] = useState<DragState | null>(null)
   const [viewportSize, setViewportSize] = useState({ height: 900, width: 1440 })
-  const tickPositions = useMemo(() => createTickPositions(duration), [duration])
+  const tickPositions = useMemo(
+    () => createTickPositions(effectiveDuration),
+    [effectiveDuration]
+  )
+
+  useEffect(() => {
+    if (!(hasDerivedVideoDuration && derivedVideoDuration !== duration)) {
+      return
+    }
+
+    setDuration(derivedVideoDuration)
+  }, [derivedVideoDuration, duration, hasDerivedVideoDuration, setDuration])
 
   useEffect(() => {
     if (!(timelinePanelOpen && selectedLayer)) {
@@ -588,7 +619,7 @@ export function EditorTimelineOverlay() {
     const rect = surface.getBoundingClientRect()
     const progress =
       rect.width > 0 ? clamp((clientX - rect.left) / rect.width, 0, 1) : 0
-    return progress * duration
+    return progress * effectiveDuration
   })
 
   const handleDragMove = useEffectEvent((event: PointerEvent) => {
@@ -645,7 +676,8 @@ export function EditorTimelineOverlay() {
 
   const selectedTrack =
     layerTracks.find((track) => track.id === selectedTrackId) ?? null
-  const progress = duration > 0 ? clamp(currentTime / duration, 0, 1) : 0
+  const progress =
+    effectiveDuration > 0 ? clamp(currentTime / effectiveDuration, 0, 1) : 0
   const shellWidth = timelinePanelOpen
     ? Math.min(EXPANDED_SHELL_WIDTH, Math.max(640, viewportSize.width - 96))
     : Math.min(COLLAPSED_SHELL_WIDTH, Math.max(360, viewportSize.width - 48))
@@ -710,7 +742,8 @@ export function EditorTimelineOverlay() {
             <TimelineTransport
               autoKey={timelineAutoKey}
               currentTime={currentTime}
-              duration={duration}
+              duration={effectiveDuration}
+              durationReadOnly={hasDerivedVideoDuration}
               expanded={timelinePanelOpen}
               frozen={frozen}
               isPlaying={isPlaying}

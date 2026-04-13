@@ -51,6 +51,10 @@ import {
 } from "@/lib/editor/shader-export"
 import { generateShaderExportSnippet } from "@/lib/editor/shader-export-snippet"
 import {
+  getEffectiveTimelineDuration,
+  getLongestVideoLayerDuration,
+} from "@/lib/editor/timeline-duration"
+import {
   useAssetStore,
   useEditorStore,
   useLayerStore,
@@ -179,30 +183,21 @@ export function EditorExportDialog({
     () => validateShaderExportSupport(layers, assets),
     [assets, layers]
   )
-  const defaultVideoDuration = useMemo(() => {
-    const assetById = new Map(assets.map((asset) => [asset.id, asset]))
-    const longestVideoDuration = layers.reduce((longest, layer) => {
-      if (
-        !(layer.kind === "source" && layer.type === "video" && layer.assetId)
-      ) {
-        return longest
-      }
-
-      const duration = assetById.get(layer.assetId)?.duration
-
-      return typeof duration === "number" &&
-        Number.isFinite(duration) &&
-        duration > 0
-        ? Math.max(longest, duration)
-        : longest
-    }, 0)
-
-    return roundDurationForExport(
-      longestVideoDuration > 0
-        ? longestVideoDuration
-        : DEFAULT_VIDEO_EXPORT_DURATION
-    )
-  }, [assets, layers])
+  const derivedVideoDuration = useMemo(
+    () => getLongestVideoLayerDuration(layers, assets),
+    [assets, layers]
+  )
+  const defaultVideoDuration = useMemo(
+    () =>
+      roundDurationForExport(
+        getEffectiveTimelineDuration(
+          layers,
+          assets,
+          timelineDuration || DEFAULT_VIDEO_EXPORT_DURATION
+        )
+      ),
+    [assets, layers, timelineDuration]
+  )
   const shaderSnippet = useMemo(() => {
     if (shaderExportIssues.length > 0) {
       return null
@@ -795,6 +790,7 @@ export function EditorExportDialog({
                           onVideoWidthChange={updateVideoWidth}
                           videoAspect={videoAspect}
                           videoDuration={videoDuration}
+                          videoDurationReadOnly={derivedVideoDuration !== null}
                           videoFormat={videoFormat}
                           videoFps={videoFps}
                           videoProgress={videoProgress}
@@ -870,6 +866,7 @@ export function EditorExportDialog({
                             onVideoWidthChange={updateVideoWidth}
                             videoAspect={videoAspect}
                             videoDuration={videoDuration}
+                            videoDurationReadOnly={derivedVideoDuration !== null}
                             videoFormat={videoFormat}
                             videoFps={videoFps}
                             videoProgress={videoProgress}
@@ -1013,6 +1010,7 @@ function VideoTabContent({
   onVideoWidthChange,
   videoAspect,
   videoDuration,
+  videoDurationReadOnly,
   videoFormat,
   videoFps,
   videoProgress,
@@ -1032,6 +1030,7 @@ function VideoTabContent({
   onVideoWidthChange: (value: number) => void
   videoAspect: ExportAspectPreset
   videoDuration: number
+  videoDurationReadOnly: boolean
   videoFormat: VideoExportFormat
   videoFps: number
   videoProgress: { label: string; value: number } | null
@@ -1111,6 +1110,10 @@ function VideoTabContent({
 
         <FieldLabel label="Duration">
           <NumberInput
+            disabled={videoDurationReadOnly}
+            formatValue={(value) =>
+              videoDurationReadOnly ? value.toFixed(2) : value.toString()
+            }
             min={0.25}
             onChange={onVideoDurationChange}
             step={0.25}
@@ -1381,20 +1384,27 @@ function NumberInput({
 }
 
 function buildRenderProjectState() {
+  const assets = useAssetStore.getState().assets
+  const layers = useLayerStore.getState().layers
   const timelineState = useTimelineStore.getState()
   const editorState = useEditorStore.getState()
+  const effectiveDuration = getEffectiveTimelineDuration(
+    layers,
+    assets,
+    timelineState.duration
+  )
 
   return {
-    assets: useAssetStore.getState().assets,
+    assets,
     compositionSize: getEffectiveCompositionSize(
       editorState.sceneConfig,
       editorState.canvasSize
     ),
-    layers: useLayerStore.getState().layers,
+    layers,
     sceneConfig: editorState.sceneConfig,
     timeline: {
       currentTime: timelineState.currentTime,
-      duration: timelineState.duration,
+      duration: effectiveDuration,
       isPlaying: timelineState.isPlaying,
       loop: timelineState.loop,
       selectedKeyframeId: timelineState.selectedKeyframeId,
