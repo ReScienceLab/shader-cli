@@ -22,6 +22,7 @@ import { createPortal } from "react-dom"
 import { Button } from "@/components/ui/button"
 import { GlassPanel } from "@/components/ui/glass-panel"
 import { IconButton } from "@/components/ui/icon-button"
+import { NumberInput as EditableNumberInput } from "@/components/ui/number-input"
 import { Typography } from "@/components/ui/typography"
 import { cn } from "@/lib/cn"
 import { getEffectiveCompositionSize } from "@/lib/editor/composition"
@@ -664,7 +665,7 @@ export function EditorExportDialog({
                     (tab) => (
                       <button
                         className={cn(
-                          "inline-flex min-h-7 items-center justify-center rounded-[var(--ds-radius-control)] border border-transparent px-[10px] leading-none transition-[background-color,border-color,color] duration-160 ease-[var(--ease-out-cubic)] hover:bg-[var(--ds-color-surface-subtle)] hover:border-[var(--ds-border-subtle)]",
+                          "inline-flex min-h-7 cursor-pointer items-center justify-center rounded-[var(--ds-radius-control)] border border-transparent px-[10px] leading-none transition-[background-color,border-color,color] duration-160 ease-[var(--ease-out-cubic)] hover:bg-[var(--ds-color-surface-subtle)] hover:border-[var(--ds-border-subtle)]",
                           activeTab === tab &&
                             "bg-[var(--ds-color-surface-active)] border-[var(--ds-border-active)]"
                         )}
@@ -1248,7 +1249,7 @@ function PillButton({
   return (
     <button
       className={cn(
-        "inline-flex min-h-7 items-center justify-center rounded-[var(--ds-radius-control)] border border-[var(--ds-border-divider)] bg-[var(--ds-color-surface-control)] px-[10px] leading-none transition-[background-color,border-color,color] duration-160 ease-[var(--ease-out-cubic)] hover:not-disabled:bg-white/8 hover:not-disabled:border-[var(--ds-border-hover)] disabled:cursor-not-allowed disabled:opacity-42",
+        "inline-flex min-h-7 cursor-pointer items-center justify-center rounded-[var(--ds-radius-control)] border border-[var(--ds-border-divider)] bg-[var(--ds-color-surface-control)] px-[10px] leading-none transition-[background-color,border-color,color] duration-160 ease-[var(--ease-out-cubic)] hover:not-disabled:bg-white/8 hover:not-disabled:border-[var(--ds-border-hover)] disabled:cursor-not-allowed disabled:opacity-42",
         active &&
           "bg-[var(--ds-color-surface-active)] border-[var(--ds-border-active)]"
       )}
@@ -1307,18 +1308,11 @@ function NumberInput({
   value: number
 }) {
   return (
-    <input
+    <EditableNumberInput
       className="min-h-9 rounded-[var(--ds-radius-control)] border border-[var(--ds-border-divider)] bg-[var(--ds-color-surface-control)] px-[10px] py-2 font-[var(--ds-font-mono)] text-[12px] leading-4 text-[var(--ds-color-text-primary)]"
       min={min}
-      onChange={(event) => {
-        const nextValue = Number.parseFloat(event.currentTarget.value)
-
-        if (Number.isFinite(nextValue)) {
-          onChange(nextValue)
-        }
-      }}
+      onChange={onChange}
       step={step}
-      type="number"
       value={value}
     />
   )

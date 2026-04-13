@@ -23,6 +23,7 @@ import {
 } from "react"
 import { GlassPanel } from "@/components/ui/glass-panel"
 import { IconButton } from "@/components/ui/icon-button"
+import { NumberInput } from "@/components/ui/number-input"
 import { Typography } from "@/components/ui/typography"
 import { cn } from "@/lib/cn"
 import { getLayerDefinition } from "@/lib/editor/config/layer-registry"
@@ -363,21 +364,22 @@ function TimelineTransport({
         <Typography as="span" tone="secondary" variant="monoSm">
           Dur
         </Typography>
-        <input
+        <NumberInput
           aria-label="Timeline duration in seconds"
-          className="min-h-7 w-[72px] appearance-none rounded-[var(--ds-radius-icon)] border border-[var(--ds-border-divider)] bg-[var(--ds-color-surface-control)] px-[10px] text-center font-[var(--ds-font-mono)] text-[12px] leading-4 text-[var(--ds-color-text-primary)] outline-none transition-[background-color,border-color] duration-160 ease-[var(--ease-out-cubic)] focus:border-[var(--ds-border-hover)]"
+          size={2}
+          className="min-h-7 appearance-none rounded-[var(--ds-radius-icon)] border border-[var(--ds-border-divider)] bg-[var(--ds-color-surface-control)] px-[10px] text-center font-[var(--ds-font-mono)] text-[12px] leading-4 text-[var(--ds-color-text-primary)] outline-none transition-[background-color,border-color] duration-160 ease-[var(--ease-out-cubic)] focus:border-[var(--ds-border-hover)]"
+          formatValue={(value) => Math.trunc(value).toString()}
           max={120}
-          min={0.25}
-          onChange={(event) => {
-            const nextValue = event.currentTarget.valueAsNumber
-
-            if (Number.isFinite(nextValue)) {
-              onDurationChange(nextValue)
-            }
+          min={1}
+          onChange={onDurationChange}
+          parseValue={(value) => {
+            const nextValue = Number.parseFloat(
+              value.trim().replaceAll(",", ".")
+            )
+            return Number.isFinite(nextValue) ? Math.trunc(nextValue) : null
           }}
-          step={0.25}
-          type="number"
-          value={duration.toFixed(2)}
+          step={1}
+          value={duration}
         />
         <Typography
           as="span"
@@ -624,6 +626,19 @@ export function EditorTimelineOverlay() {
     }
   }, [dragState])
 
+  useEffect(() => {
+    if (dragState?.type !== "playhead") {
+      return
+    }
+
+    const previousCursor = document.body.style.cursor
+    document.body.style.cursor = "grabbing"
+
+    return () => {
+      document.body.style.cursor = previousCursor
+    }
+  }, [dragState])
+
   if (immersiveCanvas) {
     return null
   }
@@ -752,7 +767,7 @@ export function EditorTimelineOverlay() {
                         return (
                           <button
                             className={cn(
-                              "flex min-h-8 items-center gap-[10px] rounded-[10px] border border-transparent px-[10px] text-left transition-[background-color,border-color,color,transform] duration-160 ease-[var(--ease-out-cubic)] hover:bg-white/4 hover:border-white/5 active:scale-[0.995]",
+                              "flex min-h-8 cursor-pointer items-center gap-[10px] rounded-[10px] border border-transparent px-[10px] text-left transition-[background-color,border-color,color,transform] duration-160 ease-[var(--ease-out-cubic)] hover:bg-white/4 hover:border-white/5 active:scale-[0.995]",
                               isFocused && "border-white/8 bg-white/8",
                               hasTrack
                                 ? "text-[var(--ds-color-text-primary)]"
@@ -939,12 +954,16 @@ export function EditorTimelineOverlay() {
                     )}
 
                     <div
-                      className="pointer-events-none absolute top-0 bottom-0 w-0 -translate-x-1/2"
+                      className={cn(
+                        "pointer-events-none absolute top-0 bottom-0 w-0 -translate-x-1/2",
+                        dragState?.type === "playhead" &&
+                          "[&_div[aria-hidden='true']]:cursor-grabbing"
+                      )}
                       style={{ left: `${progress * 100}%` }}
                     >
                       <div
                         aria-hidden="true"
-                        className="pointer-events-auto absolute top-0 left-1/2 h-[14px] w-[14px] -translate-x-1/2 rounded-[4px] bg-white/96 shadow-[0_8px_18px_rgb(0_0_0_/_0.28)]"
+                        className="pointer-events-auto absolute top-0 left-1/2 h-[14px] w-[14px] -translate-x-1/2 cursor-grab rounded-[4px] bg-white/96 shadow-[0_8px_18px_rgb(0_0_0_/_0.28)] active:cursor-grabbing"
                         onPointerDown={(event) => {
                           event.preventDefault()
                           event.stopPropagation()
@@ -953,7 +972,12 @@ export function EditorTimelineOverlay() {
                       />
                       <div
                         aria-hidden="true"
-                        className="absolute top-3 bottom-0 left-1/2 w-px -translate-x-1/2 bg-[linear-gradient(180deg,rgb(255_255_255_/_0.95)_0%,rgb(255_255_255_/_0.62)_100%)]"
+                        className="pointer-events-auto absolute top-3 bottom-0 left-1/2 w-px -translate-x-1/2 cursor-grab bg-[linear-gradient(180deg,rgb(255_255_255_/_0.95)_0%,rgb(255_255_255_/_0.62)_100%)] active:cursor-grabbing"
+                        onPointerDown={(event) => {
+                          event.preventDefault()
+                          event.stopPropagation()
+                          setDragState({ type: "playhead" })
+                        }}
                       />
                     </div>
                   </div>
@@ -981,7 +1005,7 @@ export function EditorTimelineOverlay() {
                     >
                       <BaseSelect.Trigger
                         aria-label="Track easing"
-                        className="inline-flex h-7 w-7 items-center justify-center rounded-[var(--ds-radius-icon)] border border-[var(--ds-border-divider)] bg-[var(--ds-color-surface-control)] text-[var(--ds-color-text-secondary)] transition-[background-color,border-color,color,transform] duration-160 ease-[var(--ease-out-cubic)] hover:bg-white/8 hover:border-[var(--ds-border-hover)] active:scale-[0.96] data-[popup-open]:bg-white/8 data-[popup-open]:border-[var(--ds-border-hover)] data-[popup-open]:text-[var(--ds-color-text-primary)] focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-2 focus-visible:outline-[var(--ds-border-active)]"
+                        className="inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded-[var(--ds-radius-icon)] border border-[var(--ds-border-divider)] bg-[var(--ds-color-surface-control)] text-[var(--ds-color-text-secondary)] transition-[background-color,border-color,color,transform] duration-160 ease-[var(--ease-out-cubic)] hover:bg-white/8 hover:border-[var(--ds-border-hover)] active:scale-[0.96] data-[popup-open]:bg-white/8 data-[popup-open]:border-[var(--ds-border-hover)] data-[popup-open]:text-[var(--ds-color-text-primary)] focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-2 focus-visible:outline-[var(--ds-border-active)]"
                         onPointerDown={(event) => {
                           event.stopPropagation()
                         }}
