@@ -40,6 +40,14 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     description: APP_DESCRIPTION,
+    images: [
+      {
+        alt: APP_DEFAULT_TITLE,
+        height: 630,
+        url: "/opengraph-image.png",
+        width: 1200,
+      },
+    ],
     title: {
       default: APP_DEFAULT_TITLE,
       template: APP_TITLE_TEMPLATE,
