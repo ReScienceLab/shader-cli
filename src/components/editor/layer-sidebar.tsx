@@ -1,13 +1,13 @@
 "use client"
 import {
-  DotsSixVerticalIcon,
-  DotsThreeVerticalIcon,
-  EyeIcon,
-  EyeSlashIcon,
-  FolderIcon,
-  SidebarSimpleIcon,
+  DotsVerticalIcon,
+  DragHandleDots2Icon,
+  EyeClosedIcon,
+  EyeOpenIcon,
+  FileIcon,
+  LayoutIcon,
   TrashIcon,
-} from "@phosphor-icons/react"
+} from "@radix-ui/react-icons"
 import { Reorder, useDragControls } from "motion/react"
 import {
   type ChangeEvent,
@@ -226,7 +226,7 @@ const LayerListItem = memo(function LayerListItem({
             disabled
             type="button"
           >
-            <DotsSixVerticalIcon size={14} weight="bold" />
+            <DragHandleDots2Icon height={14} width={14} />
           </button>
 
           <button
@@ -267,7 +267,7 @@ const LayerListItem = memo(function LayerListItem({
             onLayerAction(layer.id, value as LayerAction)
           }
           options={LAYER_ACTION_OPTIONS}
-          placeholder={<DotsThreeVerticalIcon size={14} weight="bold" />}
+          placeholder={<DotsVerticalIcon height={14} width={14} />}
           popupClassName="min-w-[152px]"
           triggerAriaLabel={`Layer actions for ${layer.name}`}
           triggerVariant="icon"
@@ -283,7 +283,7 @@ const LayerListItem = memo(function LayerListItem({
             }}
             variant="ghost"
           >
-            <FolderIcon size={14} weight="regular" />
+            <FileIcon height={14} width={14} />
           </IconButton>
         ) : (
           <IconButton
@@ -295,9 +295,9 @@ const LayerListItem = memo(function LayerListItem({
             variant="ghost"
           >
             {layer.visible ? (
-              <EyeIcon size={14} weight="regular" />
+              <EyeOpenIcon height={14} width={14} />
             ) : (
-              <EyeSlashIcon size={14} weight="regular" />
+              <EyeClosedIcon height={14} width={14} />
             )}
           </IconButton>
         )}
@@ -310,7 +310,7 @@ const LayerListItem = memo(function LayerListItem({
           }}
           variant="ghost"
         >
-          <TrashIcon size={14} weight="regular" />
+          <TrashIcon height={14} width={14} />
         </IconButton>
       </li>
     )
@@ -345,7 +345,7 @@ const LayerListItem = memo(function LayerListItem({
           onPointerDown={handlePointerDown}
           type="button"
         >
-          <DotsSixVerticalIcon size={14} weight="bold" />
+          <DragHandleDots2Icon height={14} width={14} />
         </button>
 
         <button
@@ -384,7 +384,7 @@ const LayerListItem = memo(function LayerListItem({
         key={`${layer.id}:${layerActionKey}`}
         onValueChange={(value) => onLayerAction(layer.id, value as LayerAction)}
         options={LAYER_ACTION_OPTIONS}
-        placeholder={<DotsThreeVerticalIcon size={14} weight="bold" />}
+        placeholder={<DotsVerticalIcon height={14} width={14} />}
         popupClassName="min-w-[152px]"
         triggerAriaLabel={`Layer actions for ${layer.name}`}
         triggerVariant="icon"
@@ -400,7 +400,7 @@ const LayerListItem = memo(function LayerListItem({
           }}
           variant="ghost"
         >
-          <FolderIcon size={14} weight="regular" />
+          <FileIcon height={14} width={14} />
         </IconButton>
       ) : (
         <IconButton
@@ -412,9 +412,9 @@ const LayerListItem = memo(function LayerListItem({
           variant="ghost"
         >
           {layer.visible ? (
-            <EyeIcon size={14} weight="regular" />
+            <EyeOpenIcon height={14} width={14} />
           ) : (
-            <EyeSlashIcon size={14} weight="regular" />
+            <EyeClosedIcon height={14} width={14} />
           )}
         </IconButton>
       )}
@@ -427,7 +427,7 @@ const LayerListItem = memo(function LayerListItem({
         }}
         variant="ghost"
       >
-        <TrashIcon size={14} weight="regular" />
+        <TrashIcon height={14} width={14} />
       </IconButton>
     </Reorder.Item>
   )
@@ -723,7 +723,7 @@ export function LayerSidebar() {
                 onClick={enterImmersiveCanvas}
                 variant="ghost"
               >
-                <SidebarSimpleIcon size={14} weight="regular" />
+                <LayoutIcon height={14} width={14} />
               </IconButton>
               <LayerPicker
                 className="pointer-events-auto"
@@ -788,7 +788,7 @@ export function LayerSidebar() {
                     variant="ghost"
                     {...dragHandleProps}
                   >
-                    <DotsSixVerticalIcon size={14} weight="bold" />
+                    <DragHandleDots2Icon height={14} width={14} />
                   </IconButton>
                   <Typography
                     className="uppercase"
@@ -805,7 +805,7 @@ export function LayerSidebar() {
                     onClick={enterImmersiveCanvas}
                     variant="ghost"
                   >
-                    <SidebarSimpleIcon size={14} weight="regular" />
+                    <LayoutIcon height={14} width={14} />
                   </IconButton>
                   <LayerPicker
                     className="pointer-events-auto"

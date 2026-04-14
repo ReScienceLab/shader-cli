@@ -1,15 +1,14 @@
 "use client"
 
 import {
-  ArrowClockwiseIcon,
-  ArrowCounterClockwiseIcon,
-  DotsSixVerticalIcon,
-  DownloadSimpleIcon,
-  GithubLogoIcon,
-  MinusIcon,
-  PlusIcon,
-  StarIcon,
-} from "@phosphor-icons/react"
+  DownloadIcon,
+  DragHandleDots2Icon,
+  GitHubLogoIcon,
+  ResetIcon,
+  StarFilledIcon,
+  ZoomInIcon,
+  ZoomOutIcon,
+} from "@radix-ui/react-icons"
 import { AnimatePresence, motion } from "motion/react"
 import Link from "next/link"
 import { useCallback, useEffect, useRef, useState } from "react"
@@ -49,8 +48,8 @@ function GitHubStarLink({ mobile = false }: { mobile?: boolean }) {
       rel="noreferrer"
       target="_blank"
     >
-      <GithubLogoIcon size={14} weight="bold" />
-      <StarIcon size={12} weight="fill" />
+      <GitHubLogoIcon height={14} width={14} />
+      <StarFilledIcon height={12} width={12} />
       <Typography as="span" tone="secondary" variant="monoSm">
         Star
       </Typography>
@@ -295,7 +294,7 @@ export function EditorTopBar() {
                 variant="ghost"
                 {...dragHandleProps}
               >
-                <DotsSixVerticalIcon size={14} weight="bold" />
+                <DragHandleDots2Icon height={14} width={14} />
               </IconButton>
               <IconButton
                 aria-label="Undo"
@@ -304,7 +303,7 @@ export function EditorTopBar() {
                 onClick={handleUndo}
                 variant="default"
               >
-                <ArrowCounterClockwiseIcon size={18} weight="bold" />
+                <ResetIcon height={18} width={18} />
               </IconButton>
               <IconButton
                 aria-label="Redo"
@@ -313,7 +312,7 @@ export function EditorTopBar() {
                 onClick={handleRedo}
                 variant="default"
               >
-                <ArrowClockwiseIcon size={18} weight="bold" />
+                <ResetIcon className="scale-x-[-1]" height={18} width={18} />
               </IconButton>
             </div>
 
@@ -324,7 +323,7 @@ export function EditorTopBar() {
                 onClick={() => applyZoomStep("out")}
                 variant="default"
               >
-                <MinusIcon size={18} weight="bold" />
+                <ZoomOutIcon height={18} width={18} />
               </IconButton>
               <button
                 className="inline-flex h-7 min-w-16 cursor-pointer items-center justify-center rounded-[var(--ds-radius-icon)] border border-[var(--ds-border-divider)] bg-[var(--ds-color-surface-control)] px-[10px] transition-[background-color,border-color,color,transform] duration-160 ease-[var(--ease-out-cubic)] hover:bg-white/8 hover:border-[var(--ds-border-hover)] active:scale-[0.98] max-[899px]:min-w-14"
@@ -341,7 +340,7 @@ export function EditorTopBar() {
                 onClick={() => applyZoomStep("in")}
                 variant="default"
               >
-                <PlusIcon size={18} weight="bold" />
+                <ZoomInIcon height={18} width={18} />
               </IconButton>
               <span
                 aria-hidden="true"
@@ -377,7 +376,7 @@ export function EditorTopBar() {
                 onClick={() => setIsExportDialogOpen(true)}
                 variant="default"
               >
-                <DownloadSimpleIcon size={16} weight="bold" />
+                <DownloadIcon height={16} width={16} />
               </IconButton>
               <GitHubStarLink />
             </div>
@@ -399,7 +398,7 @@ export function EditorTopBar() {
                 onClick={handleUndo}
                 variant="default"
               >
-                <ArrowCounterClockwiseIcon size={18} weight="bold" />
+                <ResetIcon height={18} width={18} />
               </IconButton>
               <IconButton
                 aria-label="Redo"
@@ -408,7 +407,7 @@ export function EditorTopBar() {
                 onClick={handleRedo}
                 variant="default"
               >
-                <ArrowClockwiseIcon size={18} weight="bold" />
+                <ResetIcon className="scale-x-[-1]" height={18} width={18} />
               </IconButton>
             </div>
 
@@ -419,7 +418,7 @@ export function EditorTopBar() {
                 onClick={() => applyZoomStep("out")}
                 variant="default"
               >
-                <MinusIcon size={18} weight="bold" />
+                <ZoomOutIcon height={18} width={18} />
               </IconButton>
               <button
                 className="inline-flex h-7 min-w-16 cursor-pointer items-center justify-center rounded-[var(--ds-radius-icon)] border border-[var(--ds-border-divider)] bg-[var(--ds-color-surface-control)] px-[10px] transition-[background-color,border-color,color,transform] duration-160 ease-[var(--ease-out-cubic)] hover:bg-white/8 hover:border-[var(--ds-border-hover)] active:scale-[0.98]"
@@ -436,7 +435,7 @@ export function EditorTopBar() {
                 onClick={() => applyZoomStep("in")}
                 variant="default"
               >
-                <PlusIcon size={18} weight="bold" />
+                <ZoomInIcon height={18} width={18} />
               </IconButton>
               <span
                 aria-hidden="true"
@@ -448,7 +447,7 @@ export function EditorTopBar() {
                 onClick={() => setIsExportDialogOpen(true)}
                 variant="default"
               >
-                <DownloadSimpleIcon size={16} weight="bold" />
+                <DownloadIcon height={16} width={16} />
               </IconButton>
               <GitHubStarLink mobile />
             </div>

@@ -2,14 +2,16 @@
 
 import { Select as BaseSelect } from "@base-ui/react/select"
 import {
-  BezierCurveIcon,
   CaretDownIcon,
   CaretUpIcon,
   CircleIcon,
+  CommitIcon,
+  DotFilledIcon,
+  LoopIcon,
   PauseIcon,
   PlayIcon,
   StopIcon,
-} from "@phosphor-icons/react"
+} from "@radix-ui/react-icons"
 import { motion, useReducedMotion } from "motion/react"
 import {
   type CSSProperties,
@@ -294,9 +296,9 @@ function TimelineTransport({
           variant="default"
         >
           {isPlaying ? (
-            <PauseIcon size={14} weight="fill" />
+            <PauseIcon height={14} width={14} />
           ) : (
-            <PlayIcon size={14} weight="fill" />
+            <PlayIcon height={14} width={14} />
           )}
         </IconButton>
         <IconButton
@@ -305,7 +307,18 @@ function TimelineTransport({
           onClick={onStop}
           variant="default"
         >
-          <StopIcon size={14} weight="fill" />
+          <StopIcon height={14} width={14} />
+        </IconButton>
+        <IconButton
+          aria-label={loop ? "Disable loop" : "Enable loop"}
+          className={cn(
+            "h-7 w-7",
+            loop && "bg-white/12 text-[var(--ds-color-text-primary)]"
+          )}
+          onClick={onToggleLoop}
+          variant={loop ? "active" : "default"}
+        >
+          <LoopIcon height={14} width={14} />
         </IconButton>
       </div>
 
@@ -316,19 +329,6 @@ function TimelineTransport({
 
       <div className="inline-flex items-center gap-1">
         <IconButton
-          aria-label={loop ? "Disable loop" : "Enable loop"}
-          className={cn(
-            "h-7 w-auto gap-1.5 px-[10px]",
-            loop && "bg-white/12 text-[var(--ds-color-text-primary)]"
-          )}
-          onClick={onToggleLoop}
-          variant={loop ? "active" : "default"}
-        >
-          <Typography as="span" tone="secondary" variant="monoSm">
-            Loop
-          </Typography>
-        </IconButton>
-        <IconButton
           aria-label={autoKey ? "Disable auto-key" : "Enable auto-key"}
           className={cn(
             "h-7 w-auto gap-1.5 px-[10px]",
@@ -337,7 +337,11 @@ function TimelineTransport({
           onClick={onToggleAutoKey}
           variant={autoKey ? "active" : "default"}
         >
-          <CircleIcon size={10} weight={autoKey ? "fill" : "regular"} />
+          {autoKey ? (
+            <DotFilledIcon height={10} width={10} />
+          ) : (
+            <CircleIcon height={10} width={10} />
+          )}
           <Typography as="span" tone="secondary" variant="monoSm">
             Auto-Key
           </Typography>
@@ -404,9 +408,9 @@ function TimelineTransport({
           variant="default"
         >
           {expanded ? (
-            <CaretDownIcon size={14} weight="bold" />
+            <CaretDownIcon height={14} width={14} />
           ) : (
-            <CaretUpIcon size={14} weight="bold" />
+            <CaretUpIcon height={14} width={14} />
           )}
         </IconButton>
       </div>
@@ -884,7 +888,9 @@ export function EditorTimelineOverlay() {
                           aria-hidden="true"
                           className="absolute bottom-0 w-px bg-white/6 h-[10px]"
                           key={`minor-${tick}`}
-                          style={{ left: `${(tick / effectiveDuration) * 100}%` }}
+                          style={{
+                            left: `${(tick / effectiveDuration) * 100}%`,
+                          }}
                         />
                       ))}
 
@@ -893,7 +899,9 @@ export function EditorTimelineOverlay() {
                           aria-hidden="true"
                           className="absolute bottom-0 h-[18px] w-px bg-white/14"
                           key={`major-${tick}`}
-                          style={{ left: `${(tick / effectiveDuration) * 100}%` }}
+                          style={{
+                            left: `${(tick / effectiveDuration) * 100}%`,
+                          }}
                         />
                       ))}
 
@@ -904,7 +912,9 @@ export function EditorTimelineOverlay() {
                           key={`label-${tick}`}
                           tone="muted"
                           variant="monoXs"
-                          style={{ left: `${(tick / effectiveDuration) * 100}%` }}
+                          style={{
+                            left: `${(tick / effectiveDuration) * 100}%`,
+                          }}
                         >
                           {tick.toFixed(1)}
                         </Typography>
@@ -1052,7 +1062,7 @@ export function EditorTimelineOverlay() {
                             event.stopPropagation()
                           }}
                         >
-                          <BezierCurveIcon size={14} weight="bold" />
+                          <CommitIcon height={14} width={14} />
                         </BaseSelect.Trigger>
 
                         <BaseSelect.Portal>

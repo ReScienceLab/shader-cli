@@ -3,16 +3,16 @@
 import {
   CameraIcon,
   CodeIcon,
-  GradientIcon,
   ImageIcon,
   PlusIcon,
-  TextTIcon,
-  VideoCameraIcon,
-} from "@phosphor-icons/react"
+  MagicWandIcon,
+  TextIcon,
+  VideoIcon,
+} from "@radix-ui/react-icons"
 import { AnimatePresence, motion, useReducedMotion } from "motion/react"
 import Image from "next/image"
 import {
-  type ComponentType,
+  type ElementType,
   useCallback,
   useEffect,
   useId,
@@ -56,7 +56,7 @@ export type AddLayerAction =
 type LayerPickerCategory = "all" | "core" | "distort"
 
 type SourceItem = {
-  icon: ComponentType<{ size: number; weight: "regular" | "bold" }>
+  icon: ElementType
   label: string
   value: AddLayerAction
 }
@@ -85,10 +85,10 @@ const CATEGORY_OPTIONS: readonly {
 
 const SOURCE_ITEMS: readonly SourceItem[] = [
   { icon: ImageIcon, label: "Image", value: "image" },
-  { icon: VideoCameraIcon, label: "Video", value: "video" },
+  { icon: VideoIcon, label: "Video", value: "video" },
   { icon: CameraIcon, label: "Camera", value: "live" },
-  { icon: TextTIcon, label: "Text", value: "text" },
-  { icon: GradientIcon, label: "Mesh Gradient", value: "gradient" },
+  { icon: TextIcon, label: "Text", value: "text" },
+  { icon: MagicWandIcon, label: "Mesh Gradient", value: "gradient" },
   { icon: CodeIcon, label: "Custom Shader", value: "custom-shader" },
 ] as const
 
@@ -362,7 +362,7 @@ function SourceButton({
       onClick={() => onSelect(item.value)}
       type="button"
     >
-      <Icon size={12} weight="regular" />
+      <Icon height={12} width={12} />
       {item.label}
     </button>
   )
@@ -536,7 +536,7 @@ export function LayerPicker({ className, onSelect }: LayerPickerProps) {
         ref={triggerRef}
         variant="emphasis"
       >
-        <PlusIcon size={14} weight="bold" />
+        <PlusIcon height={14} width={14} />
       </IconButton>
 
       {typeof document !== "undefined"

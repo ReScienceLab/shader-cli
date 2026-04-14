@@ -1,6 +1,6 @@
 "use client"
 
-import { DotsSixVerticalIcon, GearSixIcon } from "@phosphor-icons/react"
+import { DragHandleDots2Icon, GearIcon } from "@radix-ui/react-icons"
 import { AnimatePresence, motion, useReducedMotion } from "motion/react"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { FloatingDesktopPanel } from "@/components/editor/floating-desktop-panel"
@@ -605,10 +605,7 @@ export function PropertiesSidebar() {
                 }
                 variant="default"
               >
-                <GearSixIcon
-                  size={16}
-                  weight={sidebarView === "scene" ? "fill" : "bold"}
-                />
+                <GearIcon height={16} width={16} />
               </IconButton>
             </div>
             <AnimatePresence initial={false} mode="wait">
@@ -655,7 +652,7 @@ export function PropertiesSidebar() {
                     variant="ghost"
                     {...dragHandleProps}
                   >
-                    <DotsSixVerticalIcon size={14} weight="bold" />
+                    <DragHandleDots2Icon height={14} width={14} />
                   </IconButton>
                   <IconButton
                     aria-label={
@@ -674,10 +671,7 @@ export function PropertiesSidebar() {
                     }
                     variant="default"
                   >
-                    <GearSixIcon
-                      size={16}
-                      weight={sidebarView === "scene" ? "fill" : "bold"}
-                    />
+                    <GearIcon height={16} width={16} />
                   </IconButton>
                 </div>
                 <AnimatePresence initial={false} mode="wait">
