@@ -139,7 +139,10 @@ export function Slider({
 
   return (
     <BaseSlider.Root
-      className={cn("flex w-full flex-col gap-[var(--ds-space-2)]", className)}
+      className={cn(
+        "flex min-w-0 w-full flex-col gap-[var(--ds-space-2)]",
+        className
+      )}
       data-visual-dragging={isVisualDragging ? "" : undefined}
       defaultValue={defaultValue}
       locale={locale}
