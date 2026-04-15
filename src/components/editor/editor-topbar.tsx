@@ -289,7 +289,7 @@ export function EditorTopBar() {
       >
         {({ dragHandleProps }) => (
           <GlassPanel
-            className="flex min-h-11 w-auto items-center justify-between gap-[var(--ds-space-4)] px-[10px] py-2"
+            className="relative flex min-h-11 w-auto items-center justify-between gap-[var(--ds-space-4)] pl-[10px] pr-[102px] py-2"
             variant="panel"
           >
             <div className="inline-flex items-center gap-1.5">
@@ -351,30 +351,6 @@ export function EditorTopBar() {
                 aria-hidden="true"
                 className="block h-5 w-px rounded-full bg-[var(--ds-border-divider)]"
               />
-              <AnimatePresence initial={false}>
-                {hasMovedFloatingPanels ? (
-                  <motion.div
-                    animate={{ opacity: 1, width: "auto" }}
-                    className="overflow-hidden"
-                    exit={{ opacity: 0, width: 0 }}
-                    initial={{ opacity: 0, width: 0 }}
-                    transition={{
-                      duration: 0.2,
-                      ease: [0.32, 0.72, 0, 1],
-                    }}
-                  >
-                    <button
-                      className="inline-flex h-7 cursor-pointer items-center justify-center whitespace-nowrap rounded-[var(--ds-radius-icon)] border border-[var(--ds-border-divider)] bg-[var(--ds-color-surface-control)] px-[10px] transition-[background-color,border-color,color,transform] duration-160 ease-[var(--ease-out-cubic)] hover:bg-white/8 hover:border-[var(--ds-border-hover)] active:scale-[0.98]"
-                      onClick={resetFloatingPanels}
-                      type="button"
-                    >
-                      <Typography as="span" tone="secondary" variant="caption">
-                        Reset layout
-                      </Typography>
-                    </button>
-                  </motion.div>
-                ) : null}
-              </AnimatePresence>
               {rightSidebarVisible ? (
                 <IconButton
                   aria-label={
@@ -401,6 +377,28 @@ export function EditorTopBar() {
                 <DownloadIcon height={16} width={16} />
               </IconButton>
               <GitHubStarLink />
+            </div>
+            <div className="pointer-events-none absolute top-1/2 right-[10px] flex h-7 w-[92px] -translate-y-1/2 items-center justify-end">
+              <AnimatePresence initial={false}>
+                {hasMovedFloatingPanels ? (
+                  <motion.button
+                    animate={{ opacity: 1, x: 0 }}
+                    className="pointer-events-auto inline-flex h-7 w-full cursor-pointer items-center justify-center whitespace-nowrap rounded-[var(--ds-radius-icon)] border border-[var(--ds-border-divider)] bg-[var(--ds-color-surface-control)] px-[10px] transition-[background-color,border-color,color,transform,opacity] duration-160 ease-[var(--ease-out-cubic)] hover:border-[var(--ds-border-hover)] hover:bg-white/8 active:scale-[0.98]"
+                    exit={{ opacity: 0, x: 6 }}
+                    initial={{ opacity: 0, x: 6 }}
+                    onClick={resetFloatingPanels}
+                    transition={{
+                      duration: 0.16,
+                      ease: [0.32, 0.72, 0, 1],
+                    }}
+                    type="button"
+                  >
+                    <Typography as="span" tone="secondary" variant="caption">
+                      Reset layout
+                    </Typography>
+                  </motion.button>
+                ) : null}
+              </AnimatePresence>
             </div>
           </GlassPanel>
         )}
