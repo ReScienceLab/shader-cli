@@ -8,6 +8,7 @@ import {
   ImageIcon,
   LayoutIcon,
   TextIcon,
+  TransparencyGridIcon,
   TrashIcon,
 } from "@radix-ui/react-icons"
 import { Reorder, useDragControls } from "motion/react"
@@ -51,7 +52,12 @@ function LayerThumbnail({
   layer: EditorLayer
 }) {
   const hasPreview = asset?.kind === "image" || asset?.kind === "video"
-  const PlaceholderIcon = layer.type === "text" ? TextIcon : ImageIcon
+  let PlaceholderIcon = ImageIcon
+  if (layer.type === "pattern") {
+    PlaceholderIcon = TransparencyGridIcon
+  } else if (layer.type === "text") {
+    PlaceholderIcon = TextIcon
+  }
 
   return (
     <div
