@@ -1,18 +1,20 @@
-import type {
-  EditorAsset,
-  EditorLayer,
-  ProjectPresetConfig,
-  Size,
-} from "@/types/editor"
 import { useAssetStore } from "@/store/asset-store"
 import { useEditorStore } from "@/store/editor-store"
 import { useLayerStore } from "@/store/layer-store"
 import { useTimelineStore } from "@/store/timeline-store"
-import { getEffectiveCompositionSize } from "@/lib/editor/composition"
+import type {
+  EditorAsset,
+  EditorLayer,
+  ProjectPresetConfig,
+  SceneConfig,
+  Size,
+} from "@/types/editor"
+import { DEFAULT_SCENE_CONFIG } from "@/types/editor"
 
 export interface LabProjectFile extends ProjectPresetConfig {
   composition: Size
   format: "shader-lab"
+  sceneConfig?: SceneConfig
 }
 
 export function buildLabProjectFile(): LabProjectFile {
@@ -27,20 +29,18 @@ export function buildLabProjectFile(): LabProjectFile {
       id: asset.id,
       kind: asset.kind,
     })),
-    composition: getEffectiveCompositionSize(
-      editorState.sceneConfig,
-      editorState.canvasSize
-    ),
+    composition: structuredClone(editorState.outputSize),
     exportedAt: new Date().toISOString(),
     format: "shader-lab",
     layers: structuredClone(layerState.layers),
+    sceneConfig: structuredClone(editorState.sceneConfig),
     selectedLayerId: layerState.selectedLayerId,
     timeline: structuredClone({
       duration: timelineState.duration,
       loop: timelineState.loop,
       tracks: timelineState.tracks,
     }),
-    version: 1,
+    version: 2,
   }
 }
 
@@ -63,7 +63,7 @@ export function parseLabProjectFile(input: string): LabProjectFile {
     throw new Error("This file is not a Shader Lab `.lab` project.")
   }
 
-  if (candidate.version !== 1) {
+  if (!(candidate.version === 1 || candidate.version === 2)) {
     throw new Error("Unsupported Shader Lab project version.")
   }
 
@@ -92,22 +92,28 @@ export function parseLabProjectFile(input: string): LabProjectFile {
 
 export function applyLabProjectFile(
   projectFile: LabProjectFile,
-  currentAssets: EditorAsset[],
+  currentAssets: EditorAsset[]
 ): { missingAssetCount: number } {
   const assetIds = new Set(currentAssets.map((asset) => asset.id))
-  const assetRefById = new Map(projectFile.assets.map((asset) => [asset.id, asset]))
+  const assetRefById = new Map(
+    projectFile.assets.map((asset) => [asset.id, asset])
+  )
 
   const nextLayers = projectFile.layers.map((layer) =>
-    hydrateImportedLayer(layer, assetIds, assetRefById),
+    hydrateImportedLayer(layer, assetIds, assetRefById)
   )
 
   const hasSelectedLayer = nextLayers.some(
-    (layer) => layer.id === projectFile.selectedLayerId,
+    (layer) => layer.id === projectFile.selectedLayerId
   )
 
   useLayerStore
     .getState()
-    .replaceState(nextLayers, hasSelectedLayer ? projectFile.selectedLayerId : null, null)
+    .replaceState(
+      nextLayers,
+      hasSelectedLayer ? projectFile.selectedLayerId : null,
+      null
+    )
 
   useTimelineStore.getState().replaceState({
     currentTime: 0,
@@ -120,19 +126,21 @@ export function applyLabProjectFile(
   })
 
   const editorStore = useEditorStore.getState()
-  editorStore.updateSceneConfig({
-    compositionAspect: "custom",
-    compositionHeight: projectFile.composition.height,
-    compositionWidth: projectFile.composition.width,
-  })
-  editorStore.setOutputSize(
-    projectFile.composition.width,
-    projectFile.composition.height
-  )
+  if (projectFile.version >= 2 && projectFile.sceneConfig) {
+    editorStore.updateSceneConfig(projectFile.sceneConfig)
+    editorStore.setOutputSize(
+      projectFile.composition.width,
+      projectFile.composition.height
+    )
+  } else {
+    // Legacy v1 files stored the viewport-fitted crop in `composition`,
+    // so importing that value as the real project composition poisons export.
+    editorStore.updateSceneConfig(DEFAULT_SCENE_CONFIG)
+  }
 
   return {
-    missingAssetCount: nextLayers.filter(
-      (layer) => Boolean(layer.assetId && layer.runtimeError),
+    missingAssetCount: nextLayers.filter((layer) =>
+      Boolean(layer.assetId && layer.runtimeError)
     ).length,
   }
 }
@@ -140,7 +148,7 @@ export function applyLabProjectFile(
 function hydrateImportedLayer(
   layer: EditorLayer,
   assetIds: Set<string>,
-  assetRefById: Map<string, LabProjectFile["assets"][number]>,
+  assetRefById: Map<string, LabProjectFile["assets"][number]>
 ): EditorLayer {
   if (!(layer.assetId && !assetIds.has(layer.assetId))) {
     return {
