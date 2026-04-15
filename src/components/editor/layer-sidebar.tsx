@@ -7,6 +7,7 @@ import {
   FileIcon,
   ImageIcon,
   LayoutIcon,
+  ShadowIcon,
   TextIcon,
   TransparencyGridIcon,
   TrashIcon,
@@ -55,6 +56,8 @@ function LayerThumbnail({
   let PlaceholderIcon = ImageIcon
   if (layer.type === "pattern") {
     PlaceholderIcon = TransparencyGridIcon
+  } else if (layer.type === "gradient") {
+    PlaceholderIcon = ShadowIcon
   } else if (layer.type === "text") {
     PlaceholderIcon = TextIcon
   }
