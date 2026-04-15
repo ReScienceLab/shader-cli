@@ -99,6 +99,8 @@ export function EditorTopBar() {
   const canUndo = historyPastLength > 0
   const canRedo = historyFutureLength > 0
   const mobileActionsOpen = mobilePanel === "actions"
+  const hasResettableView =
+    zoom !== 1 || panOffset.x !== 0 || panOffset.y !== 0
 
   const syncHistorySnapshotRefs = useCallback(() => {
     const snapshot = buildEditorHistorySnapshot()
@@ -337,7 +339,11 @@ export function EditorTopBar() {
               >
                 <ZoomOutIcon height={18} width={18} />
               </IconButton>
-              <HoverTooltip content="Reset view" side="bottom">
+              <HoverTooltip
+                content="Reset view"
+                disabled={!hasResettableView}
+                side="bottom"
+              >
                 <button
                   className="inline-flex h-7 min-w-16 cursor-pointer items-center justify-center rounded-[var(--ds-radius-icon)] border border-[var(--ds-border-divider)] bg-[var(--ds-color-surface-control)] px-[10px] transition-[background-color,border-color,color,transform] duration-160 ease-[var(--ease-out-cubic)] hover:bg-white/8 hover:border-[var(--ds-border-hover)] active:scale-[0.98] max-[899px]:min-w-14"
                   onClick={resetView}
@@ -461,7 +467,10 @@ export function EditorTopBar() {
               >
                 <ZoomOutIcon height={18} width={18} />
               </IconButton>
-              <HoverTooltip content="Reset view">
+              <HoverTooltip
+                content="Reset view"
+                disabled={!hasResettableView}
+              >
                 <button
                   className="inline-flex h-7 min-w-16 cursor-pointer items-center justify-center rounded-[var(--ds-radius-icon)] border border-[var(--ds-border-divider)] bg-[var(--ds-color-surface-control)] px-[10px] transition-[background-color,border-color,color,transform] duration-160 ease-[var(--ease-out-cubic)] hover:bg-white/8 hover:border-[var(--ds-border-hover)] active:scale-[0.98]"
                   onClick={resetView}
