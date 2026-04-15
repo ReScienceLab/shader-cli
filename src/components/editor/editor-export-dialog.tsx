@@ -25,7 +25,6 @@ import { IconButton } from "@/components/ui/icon-button"
 import { NumberInput as EditableNumberInput } from "@/components/ui/number-input"
 import { Typography } from "@/components/ui/typography"
 import { cn } from "@/lib/cn"
-import { getEffectiveCompositionSize } from "@/lib/editor/composition"
 import {
   ASPECT_PRESET_LABELS,
   clampExportSize,
@@ -117,11 +116,12 @@ export function EditorExportDialog({
   onOpenChange,
 }: EditorExportDialogProps) {
   const reduceMotion = useReducedMotion() ?? false
-  const canvasSize = useEditorStore((state) => state.canvasSize)
+  const outputSize = useEditorStore((state) => state.outputSize)
   const sceneConfig = useEditorStore((state) => state.sceneConfig)
-  const compositionSize = useMemo(
-    () => getEffectiveCompositionSize(sceneConfig, canvasSize),
-    [canvasSize, sceneConfig]
+  const compositionSize = outputSize
+  const suggestedAspectPreset = useMemo(
+    () => getSuggestedExportAspectPreset(sceneConfig),
+    [sceneConfig]
   )
   const assets = useAssetStore((state) => state.assets)
   const layers = useLayerStore((state) => state.layers)
@@ -143,7 +143,7 @@ export function EditorExportDialog({
     useState<ExportQualityPreset>("standard")
   const [imageSize, setImageSize] = useState(() =>
     getDimensionsForPreset(
-      useEditorStore.getState().canvasSize,
+      useEditorStore.getState().outputSize,
       "original",
       "standard",
       DEFAULT_MAX_EXPORT_DIMENSION
@@ -154,7 +154,7 @@ export function EditorExportDialog({
     useState<ExportQualityPreset>("standard")
   const [videoSize, setVideoSize] = useState(() =>
     getDimensionsForPreset(
-      useEditorStore.getState().canvasSize,
+      useEditorStore.getState().outputSize,
       "original",
       "standard",
       DEFAULT_MAX_EXPORT_DIMENSION
@@ -331,6 +331,8 @@ export function EditorExportDialog({
     setVideoDuration(defaultVideoDuration)
     setVideoDurationDirty(false)
     setVideoProgress(null)
+    setImageAspect(suggestedAspectPreset)
+    setVideoAspect(suggestedAspectPreset)
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
@@ -359,7 +361,7 @@ export function EditorExportDialog({
           ? document.activeElement
           : null
 
-      if (!activeElement || !dialogRef.current?.contains(activeElement)) {
+      if (!(activeElement && dialogRef.current?.contains(activeElement))) {
         event.preventDefault()
         ;(event.shiftKey ? lastFocusable : firstFocusable)?.focus()
         return
@@ -378,9 +380,7 @@ export function EditorExportDialog({
     }
 
     window.requestAnimationFrame(() => {
-      dialogRef.current
-        ?.querySelector<HTMLElement>(FOCUSABLE_SELECTOR)
-        ?.focus()
+      dialogRef.current?.querySelector<HTMLElement>(FOCUSABLE_SELECTOR)?.focus()
     })
 
     window.addEventListener("keydown", handleKeyDown)
@@ -389,7 +389,7 @@ export function EditorExportDialog({
       window.removeEventListener("keydown", handleKeyDown)
       previousFocusRef.current?.focus()
     }
-  }, [defaultVideoDuration, onOpenChange, open])
+  }, [defaultVideoDuration, onOpenChange, open, suggestedAspectPreset])
 
   const clearFeedback = useCallback(() => {
     setErrorMessage(null)
@@ -866,7 +866,9 @@ export function EditorExportDialog({
                             onVideoWidthChange={updateVideoWidth}
                             videoAspect={videoAspect}
                             videoDuration={videoDuration}
-                            videoDurationReadOnly={derivedVideoDuration !== null}
+                            videoDurationReadOnly={
+                              derivedVideoDuration !== null
+                            }
                             videoFormat={videoFormat}
                             videoFps={videoFps}
                             videoProgress={videoProgress}
@@ -1402,10 +1404,7 @@ function buildRenderProjectState() {
 
   return {
     assets,
-    compositionSize: getEffectiveCompositionSize(
-      editorState.sceneConfig,
-      editorState.canvasSize
-    ),
+    compositionSize: editorState.outputSize,
     layers,
     sceneConfig: editorState.sceneConfig,
     timeline: {
@@ -1417,6 +1416,76 @@ function buildRenderProjectState() {
       selectedTrackId: timelineState.selectedTrackId,
       tracks: structuredClone(timelineState.tracks),
     },
+  }
+}
+
+function getSuggestedExportAspectPreset(
+  sceneConfig: ReturnType<typeof useEditorStore.getState>["sceneConfig"]
+): ExportAspectPreset {
+  const sceneRatio = getSceneCompositionAspectRatio(sceneConfig)
+
+  if (sceneRatio === null) {
+    return "original"
+  }
+
+  let closestPreset: ExportAspectPreset = "original"
+  let smallestDelta = Number.POSITIVE_INFINITY
+
+  for (const preset of ASPECT_PRESETS) {
+    if (preset === "original") {
+      continue
+    }
+
+    const presetRatio = getPresetRatio(preset)
+    const delta = Math.abs(sceneRatio - presetRatio)
+
+    if (delta < smallestDelta) {
+      closestPreset = preset
+      smallestDelta = delta
+    }
+  }
+
+  return smallestDelta <= 0.02 ? closestPreset : "original"
+}
+
+function getPresetRatio(
+  preset: Exclude<ExportAspectPreset, "original">
+): number {
+  switch (preset) {
+    case "1:1":
+      return 1
+    case "4:5":
+      return 4 / 5
+    case "9:16":
+      return 9 / 16
+    case "16:9":
+      return 16 / 9
+  }
+}
+
+function getSceneCompositionAspectRatio(
+  sceneConfig: ReturnType<typeof useEditorStore.getState>["sceneConfig"]
+): number | null {
+  switch (sceneConfig.compositionAspect) {
+    case "screen":
+      return null
+    case "16:9":
+      return 16 / 9
+    case "9:16":
+      return 9 / 16
+    case "4:3":
+      return 4 / 3
+    case "3:4":
+      return 3 / 4
+    case "1:1":
+      return 1
+    case "custom": {
+      const width = Math.max(1, sceneConfig.compositionWidth)
+      const height = Math.max(1, sceneConfig.compositionHeight)
+      return width / height
+    }
+    default:
+      return null
   }
 }
 
