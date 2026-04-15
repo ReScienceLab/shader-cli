@@ -3,6 +3,7 @@
 import {
   DownloadIcon,
   DragHandleDots2Icon,
+  GearIcon,
   GitHubLogoIcon,
   ResetIcon,
   StarFilledIcon,
@@ -17,6 +18,7 @@ import { GlassPanel } from "@/components/ui/glass-panel"
 import { IconButton } from "@/components/ui/icon-button"
 import { HoverTooltip } from "@/components/ui/tooltip"
 import { Typography } from "@/components/ui/typography"
+import { cn } from "@/lib/cn"
 import {
   applyEditorHistorySnapshot,
   buildEditorHistorySnapshot,
@@ -52,7 +54,7 @@ function GitHubStarLink({ mobile = false }: { mobile?: boolean }) {
       >
         <GitHubLogoIcon height={14} width={14} />
         <StarFilledIcon height={12} width={12} />
-        <Typography as="span" tone="secondary" variant="monoSm">
+        <Typography as="span" tone="secondary" variant="caption">
           Star
         </Typography>
       </Link>
@@ -63,6 +65,9 @@ function GitHubStarLink({ mobile = false }: { mobile?: boolean }) {
 export function EditorTopBar() {
   const immersiveCanvas = useEditorStore((state) => state.immersiveCanvas)
   const mobilePanel = useEditorStore((state) => state.mobilePanel)
+  const rightSidebarVisible = useEditorStore((state) => state.sidebars.right)
+  const sidebarView = useEditorStore((state) => state.sidebarView)
+  const setSidebarView = useEditorStore((state) => state.setSidebarView)
   const zoom = useEditorStore((state) => state.zoom)
   const panOffset = useEditorStore((state) => state.panOffset)
   const hasMovedFloatingPanels = useEditorStore(
@@ -272,6 +277,10 @@ export function EditorTopBar() {
     setPan(nextState.panOffset.x, nextState.panOffset.y)
   }
 
+  const toggleSidebarView = () => {
+    setSidebarView(sidebarView === "scene" ? "properties" : "scene")
+  }
+
   if (immersiveCanvas) {
     return null
   }
@@ -292,7 +301,7 @@ export function EditorTopBar() {
           >
             <div className="inline-flex items-center gap-1.5">
               <IconButton
-                aria-label="Move top bar"
+                aria-label="Drag"
                 className="h-7 w-7 cursor-grab text-[var(--ds-color-text-muted)] active:cursor-grabbing"
                 tooltipSide="bottom"
                 variant="ghost"
@@ -375,7 +384,11 @@ export function EditorTopBar() {
                         onClick={resetFloatingPanels}
                         type="button"
                       >
-                        <Typography as="span" tone="secondary" variant="monoSm">
+                        <Typography
+                          as="span"
+                          tone="secondary"
+                          variant="caption"
+                        >
                           Reset layout
                         </Typography>
                       </button>
@@ -383,6 +396,23 @@ export function EditorTopBar() {
                   </motion.div>
                 ) : null}
               </AnimatePresence>
+              {rightSidebarVisible ? (
+                <IconButton
+                  aria-label={
+                    sidebarView === "scene"
+                      ? "Layer properties"
+                      : "Scene settings"
+                  }
+                  className={cn(
+                    "h-7 w-7",
+                    sidebarView === "scene" && "bg-white/10"
+                  )}
+                  onClick={toggleSidebarView}
+                  variant="default"
+                >
+                  <GearIcon height={16} width={16} />
+                </IconButton>
+              ) : null}
               <IconButton
                 aria-label="Export"
                 className="h-7 w-7 disabled:opacity-45"
