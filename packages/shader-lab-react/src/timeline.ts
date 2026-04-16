@@ -1,6 +1,7 @@
-import { easings } from "./easings"
+import { evaluateCubicBezier } from "./easings"
 import type {
   ShaderLabAnimatedPropertyBinding,
+  ShaderLabKeyframeEasing,
   ShaderLabLayerConfig,
   ShaderLabParameterValue,
   ShaderLabTimelineInterpolation,
@@ -69,29 +70,37 @@ function lerp(a: number, b: number, progress: number): number {
   return a + (b - a) * progress
 }
 
-function resolveProgress(progress: number, interpolation: ShaderLabTimelineInterpolation): number {
-  if (interpolation === "step") {
-    return 0
+function migrateInterpolationToEasing(
+  interpolation: ShaderLabTimelineInterpolation | undefined,
+): ShaderLabKeyframeEasing | undefined {
+  switch (interpolation) {
+    case "step":
+      return { type: "step" }
+    case "smooth":
+      return { controlPoints: [0.65, 0, 0.35, 1], type: "bezier" }
+    case "linear":
+      return { controlPoints: [0, 0, 1, 1], type: "bezier" }
+    default:
+      return undefined
   }
+}
 
-  if (interpolation === "smooth") {
-    return easings.easeInOutCubic(progress)
-  }
-
-  return progress
+function resolveEasing(progress: number, easing: ShaderLabKeyframeEasing): number {
+  if (easing.type === "step") return 0
+  return evaluateCubicBezier(progress, easing.controlPoints)
 }
 
 function interpolateValue(
   from: ShaderLabParameterValue,
   to: ShaderLabParameterValue,
   progress: number,
-  interpolation: ShaderLabTimelineInterpolation,
+  easing: ShaderLabKeyframeEasing,
 ): ShaderLabParameterValue {
-  if (interpolation === "step") {
+  if (easing.type === "step") {
     return cloneParameterValue(from)
   }
 
-  const eased = resolveProgress(progress, interpolation)
+  const eased = resolveEasing(progress, easing)
 
   if (typeof from === "number" && typeof to === "number") {
     return lerp(from, to, eased)
@@ -151,6 +160,10 @@ function evaluateTrackAtTime(
     return cloneParameterValue(lastKeyframe.value)
   }
 
+  const trackFallbackEasing = track.interpolation
+    ? migrateInterpolationToEasing(track.interpolation)
+    : undefined
+
   for (let index = 1; index < track.keyframes.length; index += 1) {
     const nextKeyframe = track.keyframes[index]
     const previousKeyframe = track.keyframes[index - 1]
@@ -162,11 +175,15 @@ function evaluateTrackAtTime(
     const span = Math.max(nextKeyframe.time - previousKeyframe.time, 1e-6)
     const progress = Math.max(0, Math.min(1, (time - previousKeyframe.time) / span))
 
+    const easing: ShaderLabKeyframeEasing = previousKeyframe.easing
+      ?? trackFallbackEasing
+      ?? { controlPoints: [0, 0, 1, 1], type: "bezier" }
+
     return interpolateValue(
       previousKeyframe.value,
       nextKeyframe.value,
       progress,
-      track.interpolation,
+      easing,
     )
   }
 

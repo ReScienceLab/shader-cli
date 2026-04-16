@@ -17,10 +17,9 @@ import {
 } from "three/tsl"
 import {
   buildPatternAtlas,
-  PATTERN_PRESET_SOURCES,
   type PatternPreset,
 } from "@/renderer/pattern-atlas"
-import { createPipelinePlaceholder, PassNode } from "@/renderer/pass-node"
+import { PassNode } from "@/renderer/pass-node"
 import type { LayerParameterValues } from "@/types/editor"
 
 type Node = TSLNode
@@ -95,16 +94,13 @@ export class PatternPass extends PassNode {
 
   private atlasBuildRequestId = 0
   private atlasPending = false
-  private atlasPreset: PatternPreset | null = null
-  private atlasCellSize = 0
-  private atlasPatternCount = 0
   private currentCellSize = 12
   private currentPreset: PatternPreset = "bars"
   private needsRefresh = false
 
   constructor(layerId: string) {
     super(layerId)
-    this.placeholder = createPipelinePlaceholder()
+    this.placeholder = new THREE.Texture()
     this.bloomIntensityUniform = uniform(1.25)
     this.bloomRadiusUniform = uniform(6)
     this.bloomSoftnessUniform = uniform(0.35)
@@ -213,14 +209,8 @@ export class PatternPass extends PassNode {
       typeof params.customColor4 === "string" ? params.customColor4 : "#e1e2de",
     )
 
-    const expectedPatternCount = PATTERN_PRESET_SOURCES[nextPreset].length
     const needsAtlasRebuild =
-      nextCellSize !== this.currentCellSize ||
-      nextPreset !== this.currentPreset ||
-      this.atlasTexture === null ||
-      this.atlasPreset !== nextPreset ||
-      this.atlasCellSize !== nextCellSize ||
-      this.atlasPatternCount !== expectedPatternCount
+      nextCellSize !== this.currentCellSize || nextPreset !== this.currentPreset
 
     this.currentCellSize = nextCellSize
     this.currentPreset = nextPreset
@@ -249,10 +239,6 @@ export class PatternPass extends PassNode {
 
   override needsContinuousRender(): boolean {
     return this.atlasPending || this.needsRefresh
-  }
-
-  override hasPendingResources(): boolean {
-    return this.atlasPending
   }
 
   override dispose(): void {
@@ -485,10 +471,7 @@ export class PatternPass extends PassNode {
 
         this.atlasTexture?.dispose()
         this.atlasTexture = atlasTexture
-        this.atlasPreset = this.currentPreset
-        this.atlasCellSize = this.currentCellSize
-        this.atlasPatternCount = atlasTexture.image.width / this.currentCellSize
-        this.numPatternsUniform.value = this.atlasPatternCount
+        this.numPatternsUniform.value = atlasTexture.image.width / this.currentCellSize
         this.atlasPending = false
         this.needsRefresh = true
         this.rebuildEffectNode()
@@ -499,9 +482,6 @@ export class PatternPass extends PassNode {
         }
 
         this.atlasPending = false
-        this.atlasPreset = null
-        this.atlasCellSize = 0
-        this.atlasPatternCount = 0
         this.needsRefresh = true
       })
   }
