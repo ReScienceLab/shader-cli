@@ -10,6 +10,24 @@
   <em>ASCII art shader composition — generated entirely from the CLI</em>
 </p>
 
+<p align="center">
+  <img src="public/demos/rescience-lab-blue.gif" alt="ReScience Lab CRT demo" width="800" />
+</p>
+
+<p align="center">
+  <em>CRT + Dithering + Pattern composition with custom text color (#0047ab)</em>
+</p>
+
+<details>
+<summary>CLI commands used to generate the above</summary>
+
+```bash
+bun run src/index.ts -- preset apply crt-text --text "ReScience Lab" -o scene.lab
+bun run src/index.ts -- --project scene.lab layer set 2 -p "textColor=#0047ab"
+bun run src/index.ts -- --project scene.lab export video -o ReScience-Lab-blue.webm
+```
+</details>
+
 ---
 
 This is a fork of [basement.studio's Shader Lab](https://github.com/basementstudio/shader-lab) with an added **CLI harness** that makes the shader editor fully controllable from the command line. All project editing is instant (pure JSON). Video/image export uses headless Chrome with WebGPU.
