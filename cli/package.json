@@ -1,0 +1,22 @@
+{
+  "name": "@shader-lab/cli",
+  "version": "0.1.0",
+  "description": "CLI harness for Shader Lab — agent-native shader composition",
+  "type": "module",
+  "bin": {
+    "shader-lab": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "bun build src/index.ts --outdir dist --target node --format esm",
+    "dev": "bun run src/index.ts",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "commander": "^13.1.0",
+    "playwright": "^1.52.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.0",
+    "typescript": "^5.9.3"
+  }
+}
