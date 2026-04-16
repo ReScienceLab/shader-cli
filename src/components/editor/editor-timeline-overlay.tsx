@@ -1,11 +1,9 @@
 "use client"
 
-import { Select as BaseSelect } from "@base-ui/react/select"
 import {
   CaretDownIcon,
   CaretUpIcon,
   CircleIcon,
-  CommitIcon,
   DotFilledIcon,
   LoopIcon,
   PauseIcon,
@@ -22,12 +20,15 @@ import {
   useRef,
   useState,
 } from "react"
+import { CurveEditorPopover } from "@/components/editor/curve-editor"
 import { FloatingDesktopPanel } from "@/components/editor/floating-desktop-panel"
 import { GlassPanel } from "@/components/ui/glass-panel"
 import { IconButton } from "@/components/ui/icon-button"
 import { NumberInput } from "@/components/ui/number-input"
 import { Typography } from "@/components/ui/typography"
 import { cn } from "@/lib/cn"
+import type { KeyframeEasing } from "@/lib/easing-curve"
+import { LINEAR_EASING } from "@/lib/easing-curve"
 import { getLayerDefinition } from "@/lib/editor/config/layer-registry"
 import { getLongestVideoLayerDuration } from "@/lib/editor/timeline-duration"
 import { useEditorStore, useLayerStore, useTimelineStore } from "@/store"
@@ -40,10 +41,8 @@ import type {
   AnimatedPropertyBinding,
   EditorLayer,
   ParameterDefinition,
-  TimelineInterpolation,
   TimelineTrack,
 } from "@/types/editor"
-import { TIMELINE_INTERPOLATIONS } from "@/types/editor"
 
 type TimelinePropertyItem = {
   binding: AnimatedPropertyBinding
@@ -74,10 +73,6 @@ const COLLAPSED_SHELL_HEIGHT = 46
 const COLLAPSED_SHELL_WIDTH = 580
 const EXPANDED_SHELL_HEIGHT = 380
 const EXPANDED_SHELL_WIDTH = 820
-const INTERPOLATION_OPTIONS = TIMELINE_INTERPOLATIONS.map((value) => ({
-  label: value[0]?.toUpperCase() + value.slice(1),
-  value,
-}))
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value))
@@ -418,6 +413,39 @@ function TimelineTransport({
   )
 }
 
+function CurveEditorOverlayControl({
+  keyframeId,
+  onEasingChange,
+  track,
+}: {
+  keyframeId: string
+  onEasingChange: (
+    trackId: string,
+    keyframeId: string,
+    easing: KeyframeEasing
+  ) => void
+  track: TimelineTrack
+}) {
+  const keyframe = track.keyframes.find((kf) => kf.id === keyframeId)
+  const easing: KeyframeEasing = keyframe?.easing ?? LINEAR_EASING
+
+  return (
+    <div
+      className="pointer-events-auto absolute right-3 bottom-3 z-4 inline-flex"
+      onPointerDown={(event) => {
+        event.stopPropagation()
+      }}
+    >
+      <CurveEditorPopover
+        easing={easing}
+        onChange={(nextEasing) =>
+          onEasingChange(track.id, keyframeId, nextEasing)
+        }
+      />
+    </div>
+  )
+}
+
 export function EditorTimelineOverlay() {
   const reduceMotion = useReducedMotion() ?? false
   const immersiveCanvas = useEditorStore((state) => state.immersiveCanvas)
@@ -455,9 +483,7 @@ export function EditorTimelineOverlay() {
   const setLoop = useTimelineStore((state) => state.setLoop)
   const setPlaying = useTimelineStore((state) => state.setPlaying)
   const setSelected = useTimelineStore((state) => state.setSelected)
-  const setTrackInterpolation = useTimelineStore(
-    (state) => state.setTrackInterpolation
-  )
+  const setKeyframeEasing = useTimelineStore((state) => state.setKeyframeEasing)
   const setKeyframeTime = useTimelineStore((state) => state.setKeyframeTime)
   const removeKeyframe = useTimelineStore((state) => state.removeKeyframe)
   const stop = useTimelineStore((state) => state.stop)
@@ -1018,63 +1044,12 @@ export function EditorTimelineOverlay() {
                     </div>
                   </div>
 
-                  {selectedTrack ? (
-                    <div
-                      className="pointer-events-auto absolute right-3 bottom-3 z-4 inline-flex"
-                      onPointerDown={(event) => {
-                        event.stopPropagation()
-                      }}
-                    >
-                      <BaseSelect.Root
-                        items={INTERPOLATION_OPTIONS}
-                        modal={false}
-                        onValueChange={(value) => {
-                          if (value) {
-                            setTrackInterpolation(
-                              selectedTrack.id,
-                              value as TimelineInterpolation
-                            )
-                          }
-                        }}
-                        value={selectedTrack.interpolation}
-                      >
-                        <BaseSelect.Trigger
-                          aria-label="Track easing"
-                          className="inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded-[var(--ds-radius-icon)] border border-[var(--ds-border-divider)] bg-[var(--ds-color-surface-control)] text-[var(--ds-color-text-secondary)] transition-[background-color,border-color,color,transform] duration-160 ease-[var(--ease-out-cubic)] hover:bg-white/8 hover:border-[var(--ds-border-hover)] active:scale-[0.96] data-[popup-open]:bg-white/8 data-[popup-open]:border-[var(--ds-border-hover)] data-[popup-open]:text-[var(--ds-color-text-primary)] focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-2 focus-visible:outline-[var(--ds-border-active)]"
-                          onPointerDown={(event) => {
-                            event.stopPropagation()
-                          }}
-                        >
-                          <CommitIcon height={14} width={14} />
-                        </BaseSelect.Trigger>
-
-                        <BaseSelect.Portal>
-                          <BaseSelect.Positioner
-                            align="end"
-                            alignItemWithTrigger={false}
-                            className="z-50 outline-none"
-                            side="top"
-                            sideOffset={10}
-                          >
-                            <BaseSelect.Popup className="min-w-[132px] overflow-hidden rounded-[12px] border border-[var(--ds-border-panel)] bg-[rgb(18_18_22_/_0.82)] shadow-[var(--ds-shadow-panel-dark)] backdrop-blur-[24px]">
-                              <BaseSelect.List className="flex flex-col gap-0.5 p-1">
-                                {INTERPOLATION_OPTIONS.map((option) => (
-                                  <BaseSelect.Item
-                                    className="cursor-pointer rounded-[var(--ds-radius-icon)] px-[10px] py-[6px] text-[var(--ds-color-text-secondary)] outline-none transition-[background-color,color] duration-140 ease-[var(--ease-out-cubic)] data-[highlighted]:bg-[var(--ds-color-surface-active)] data-[selected]:bg-[var(--ds-color-surface-active)] data-[highlighted]:text-[var(--ds-color-text-primary)] data-[selected]:text-[var(--ds-color-text-primary)]"
-                                    key={option.value}
-                                    value={option.value}
-                                  >
-                                    <BaseSelect.ItemText className="block font-[var(--ds-font-mono)] text-[11px] leading-[14px]">
-                                      {option.label}
-                                    </BaseSelect.ItemText>
-                                  </BaseSelect.Item>
-                                ))}
-                              </BaseSelect.List>
-                            </BaseSelect.Popup>
-                          </BaseSelect.Positioner>
-                        </BaseSelect.Portal>
-                      </BaseSelect.Root>
-                    </div>
+                  {selectedTrack && selectedKeyframeId ? (
+                    <CurveEditorOverlayControl
+                      keyframeId={selectedKeyframeId}
+                      onEasingChange={setKeyframeEasing}
+                      track={selectedTrack}
+                    />
                   ) : null}
                 </div>
               </div>

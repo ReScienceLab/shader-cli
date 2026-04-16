@@ -1,3 +1,11 @@
+import type {
+  CubicBezierPoints as _CubicBezierPoints,
+  KeyframeEasing as _KeyframeEasing,
+} from "@/lib/easing-curve"
+
+export type CubicBezierPoints = _CubicBezierPoints
+export type KeyframeEasing = _KeyframeEasing
+
 export const LAYER_KINDS = ["source", "effect", "model"] as const
 export type LayerKind = (typeof LAYER_KINDS)[number]
 
@@ -288,13 +296,16 @@ export interface TimelineKeyframe {
   id: string
   time: number
   value: ParameterValue
+  easing: KeyframeEasing
 }
 
 export interface TimelineTrack {
   binding: AnimatedPropertyBinding
+  easing?: KeyframeEasing
   enabled: boolean
   id: string
-  interpolation: TimelineInterpolation
+  /** @deprecated Use `easing` instead. Kept for backward compat with old project files. */
+  interpolation?: TimelineInterpolation
   keyframes: TimelineKeyframe[]
   layerId: string
 }

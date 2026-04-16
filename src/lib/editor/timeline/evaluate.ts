@@ -1,11 +1,14 @@
-import { easings } from "@/lib/easings"
+import {
+  type KeyframeEasing,
+  migrateInterpolationToEasing,
+  resolveEasing,
+} from "@/lib/easing-curve"
 import type {
   AnimatedPropertyBinding,
   EditorLayer,
   LayerAnimatableProperty,
   LayerParameterValues,
   ParameterValue,
-  TimelineInterpolation,
   TimelineTrack,
 } from "@/types/editor"
 import { cloneParameterValue } from "@/lib/editor/parameter-schema"
@@ -84,29 +87,17 @@ function lerp(a: number, b: number, progress: number): number {
   return a + (b - a) * progress
 }
 
-function resolveProgress(progress: number, interpolation: TimelineInterpolation): number {
-  if (interpolation === "step") {
-    return 0
-  }
-
-  if (interpolation === "smooth") {
-    return easings.easeInOutCubic(progress)
-  }
-
-  return progress
-}
-
 function interpolateValue(
   from: ParameterValue,
   to: ParameterValue,
   progress: number,
-  interpolation: TimelineInterpolation,
+  easing: KeyframeEasing,
 ): ParameterValue {
-  if (interpolation === "step") {
+  if (easing.type === "step") {
     return cloneParameterValue(from)
   }
 
-  const eased = resolveProgress(progress, interpolation)
+  const eased = resolveEasing(progress, easing)
 
   if (typeof from === "number" && typeof to === "number") {
     return lerp(from, to, eased)
@@ -164,6 +155,10 @@ function evaluateTrackAtTime(track: TimelineTrack, time: number): ParameterValue
     return cloneParameterValue(lastKeyframe.value)
   }
 
+  const trackFallbackEasing = track.interpolation
+    ? migrateInterpolationToEasing(track.interpolation)
+    : undefined
+
   for (let index = 1; index < track.keyframes.length; index += 1) {
     const nextKeyframe = track.keyframes[index]
     const previousKeyframe = track.keyframes[index - 1]
@@ -174,12 +169,15 @@ function evaluateTrackAtTime(track: TimelineTrack, time: number): ParameterValue
 
     const span = Math.max(nextKeyframe.time - previousKeyframe.time, 1e-6)
     const progress = Math.max(0, Math.min(1, (time - previousKeyframe.time) / span))
+    const easing: KeyframeEasing = previousKeyframe.easing
+      ?? trackFallbackEasing
+      ?? { controlPoints: [0, 0, 1, 1], type: "bezier" }
 
     return interpolateValue(
       previousKeyframe.value,
       nextKeyframe.value,
       progress,
-      track.interpolation,
+      easing,
     )
   }
 

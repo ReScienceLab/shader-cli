@@ -106,6 +106,12 @@ export type ShaderLabSketchSource =
 
 export type ShaderLabTimelineInterpolation = "linear" | "smooth" | "step"
 
+export type ShaderLabCubicBezierPoints = [number, number, number, number]
+
+export type ShaderLabKeyframeEasing =
+  | { type: "bezier"; controlPoints: ShaderLabCubicBezierPoints }
+  | { type: "step" }
+
 export type ShaderLabAnimatedPropertyBinding =
   | {
       kind: "layer"
@@ -121,6 +127,7 @@ export type ShaderLabAnimatedPropertyBinding =
     }
 
 export interface ShaderLabTimelineKeyframe {
+  easing?: ShaderLabKeyframeEasing
   id: string
   time: number
   value: ShaderLabParameterValue
@@ -130,7 +137,8 @@ export interface ShaderLabTimelineTrack {
   binding: ShaderLabAnimatedPropertyBinding
   enabled: boolean
   id: string
-  interpolation: ShaderLabTimelineInterpolation
+  /** @deprecated Use per-keyframe `easing` instead. */
+  interpolation?: ShaderLabTimelineInterpolation
   keyframes: ShaderLabTimelineKeyframe[]
   layerId: string
 }

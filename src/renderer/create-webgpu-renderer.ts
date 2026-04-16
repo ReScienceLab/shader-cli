@@ -52,7 +52,10 @@ export async function createWebGPURenderer(
     },
 
     hasPendingResources() {
-      return pipeline?.hasPendingResources() ?? false
+      return (
+        (pipeline?.hasPendingCompilations() ?? false) ||
+        (pipeline?.hasPendingMediaLoads() ?? false)
+      )
     },
 
     resize(size: Size, pixelRatio: number) {

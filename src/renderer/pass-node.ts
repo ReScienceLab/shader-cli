@@ -18,16 +18,6 @@ import type { LayerCompositeMode, LayerParameterValues, MaskConfig } from "@/typ
 
 type Node = TSLNode
 
-export function createPipelinePlaceholder(): THREE.Texture {
-  const texture = new THREE.Texture()
-  texture.type = THREE.HalfFloatType
-  texture.format = THREE.RGBAFormat
-  texture.minFilter = THREE.NearestFilter
-  texture.magFilter = THREE.NearestFilter
-  texture.generateMipmaps = false
-  return texture
-}
-
 export class PassNode {
   readonly layerId: string
 
@@ -58,8 +48,9 @@ export class PassNode {
     this.hueUniform = uniform(0)
     this.saturationUniform = uniform(1)
 
+    const placeholder = new THREE.Texture()
     const renderTargetUv = vec2(uv().x, float(1).sub(uv().y))
-    this.inputNode = tslTexture(createPipelinePlaceholder(), renderTargetUv)
+    this.inputNode = tslTexture(placeholder, renderTargetUv)
     this.effectNode = this.buildEffectNode()
     this.rebuildColorNode()
 
@@ -148,10 +139,6 @@ export class PassNode {
   }
 
   needsContinuousRender(): boolean {
-    return false
-  }
-
-  hasPendingResources(): boolean {
     return false
   }
 
