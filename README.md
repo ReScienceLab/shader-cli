@@ -3,7 +3,7 @@
 > Agent-native CLI for [Shader Lab](https://github.com/basementstudio/shader-lab) — create, stack, and export WebGPU shader compositions from the terminal.
 
 <p align="center">
-  <video src="https://github.com/ReScienceLab/shader-cli/raw/main/public/demos/rescience-lab-hero.webm" autoplay loop muted playsinline width="800"></video>
+  <img src="public/demos/rescience-lab-hero.gif" alt="ReScience Lab — npm i -g @resciencelab/shader-cli" width="800" />
 </p>
 
 <p align="center">
