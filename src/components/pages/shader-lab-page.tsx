@@ -1,3 +1,5 @@
+"use client"
+
 import { Suspense } from "react"
 import { EditorCanvasViewport } from "@/components/editor/editor-canvas-viewport"
 import { MobileEditorDock } from "@/components/editor/mobile-editor-dock"

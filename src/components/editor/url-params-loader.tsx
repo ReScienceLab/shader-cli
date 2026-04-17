@@ -202,7 +202,16 @@ export function UrlParamsLoader() {
   const searchParams = useSearchParams()
   const appliedRef = useRef(false)
 
+  // Debug: log on every render
+  if (typeof window !== "undefined") {
+    // eslint-disable-next-line no-console
+    console.log("[shader-cli] UrlParamsLoader RENDER", searchParams.toString())
+  }
+
   useEffect(() => {
+    (window as any).__shaderCliUrlParams = { fired: true, applied: appliedRef.current, preset: searchParams.get("preset"), text: searchParams.get("text") }
+    // eslint-disable-next-line no-console
+    console.log("[shader-cli] UrlParamsLoader effect", { applied: appliedRef.current, preset: searchParams.get("preset"), text: searchParams.get("text") })
     if (appliedRef.current) return
     const preset = searchParams.get("preset")
     const project = searchParams.get("project")

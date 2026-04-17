@@ -272,38 +272,89 @@ export class TextPass extends PassNode {
     context.textBaseline = "alphabetic"
     context.font = `${normalizedFontWeight} ${fontSize}px ${fontFamily}`
 
-    const characters = [...text]
-    const spacing = fontSize * letterSpacing
-    const glyphLayout: GlyphLayout[] = []
-    let visualLeft = Number.POSITIVE_INFINITY
-    let visualRight = Number.NEGATIVE_INFINITY
-    let cursorX = 0
+    const lineHeight =
+      typeof this.params.lineHeight === "number"
+        ? this.params.lineHeight
+        : 1.3
+    const lines = text.split("\n")
 
-    for (const [index, char] of characters.entries()) {
-      const metrics = context.measureText(char)
-      const advance = metrics.width
-      const glyphLeft = cursorX - Math.max(0, metrics.actualBoundingBoxLeft)
-      const glyphRight =
-        cursorX + Math.max(metrics.actualBoundingBoxRight, advance)
+    type LineLayout = {
+      glyphs: GlyphLayout[]
+      visualLeft: number
+      visualRight: number
+      metrics: TextMetrics
+      lineFontSize: number
+    }
 
-      glyphLayout.push({
-        advance,
-        char,
-        x: cursorX,
-      })
-      visualLeft = Math.min(visualLeft, glyphLeft)
-      visualRight = Math.max(visualRight, glyphRight)
-      cursorX += advance
+    function layoutLine(
+      ctx: CanvasRenderingContext2D,
+      line: string,
+      lineFontSize: number,
+      lineLetterSpacing: number
+    ): LineLayout {
+      ctx.font = `${normalizedFontWeight} ${lineFontSize}px ${fontFamily}`
+      const characters = [...line]
+      const spacing = lineFontSize * lineLetterSpacing
+      const glyphs: GlyphLayout[] = []
+      let vLeft = Number.POSITIVE_INFINITY
+      let vRight = Number.NEGATIVE_INFINITY
+      let cursorX = 0
 
-      if (index < characters.length - 1) {
-        cursorX += spacing
+      for (const [index, char] of characters.entries()) {
+        const m = ctx.measureText(char)
+        const advance = m.width
+        const glyphLeft = cursorX - Math.max(0, m.actualBoundingBoxLeft)
+        const glyphRight =
+          cursorX + Math.max(m.actualBoundingBoxRight, advance)
+
+        glyphs.push({ advance, char, x: cursorX })
+        vLeft = Math.min(vLeft, glyphLeft)
+        vRight = Math.max(vRight, glyphRight)
+        cursorX += advance
+
+        if (index < characters.length - 1) {
+          cursorX += spacing
+        }
+      }
+
+      if (!Number.isFinite(vLeft)) {
+        vLeft = 0
+        vRight = 0
+      }
+
+      return {
+        glyphs,
+        lineFontSize,
+        metrics: getTextMetrics(ctx, line.length > 0 ? line : "M", lineFontSize),
+        visualLeft: vLeft,
+        visualRight: vRight,
       }
     }
 
-    if (!Number.isFinite(visualLeft)) {
-      visualLeft = 0
-      visualRight = 0
+    // Layout first line at full fontSize, subsequent lines auto-shrink to fit
+    const maxLineWidth = this.width * 0.9
+    const lineLayouts: LineLayout[] = []
+    for (const [i, line] of lines.entries()) {
+      if (i === 0) {
+        lineLayouts.push(layoutLine(context, line, fontSize, letterSpacing))
+      } else {
+        // Try at fontSize first, shrink if too wide
+        let trySize = fontSize
+        let layout = layoutLine(context, line, trySize, letterSpacing)
+        const lineWidth = layout.visualRight - layout.visualLeft
+        if (lineWidth > maxLineWidth && lineWidth > 0) {
+          trySize = Math.max(
+            Math.round(fontSize * 0.3),
+            Math.round(trySize * (maxLineWidth / lineWidth))
+          )
+          layout = layoutLine(context, line, trySize, letterSpacing)
+        }
+        lineLayouts.push(layout)
+      }
     }
+
+    // Restore font for metrics consistency
+    context.font = `${normalizedFontWeight} ${fontSize}px ${fontFamily}`
 
     const sceneCropFrame = getCompositionFrame(
       {
@@ -356,7 +407,6 @@ export class TextPass extends PassNode {
     const cropY = combinedCropFrame.y
     const cropWidth = combinedCropFrame.width
     const cropHeight = combinedCropFrame.height
-    const metrics = getTextMetrics(context, text, fontSize)
 
     let anchorX = cropX + cropWidth * 0.5
     if (horizontal === "left") {
@@ -375,22 +425,35 @@ export class TextPass extends PassNode {
     const offsetX = offset[0] * cropWidth
     const offsetY = offset[1] * cropHeight
 
-    let startX = anchorX + offsetX - (visualLeft + visualRight) * 0.5
-    if (horizontal === "left") {
-      startX = anchorX + offsetX - visualLeft
-    } else if (horizontal === "right") {
-      startX = anchorX + offsetX - visualRight
-    }
+    const totalBlockHeight = lineLayouts.reduce((sum, l, i) => {
+      return i === 0 ? 0 : sum + l.lineFontSize * lineHeight
+    }, 0)
 
-    let baselineY = anchorY - offsetY + (metrics.ascent - metrics.descent) * 0.5
-    if (vertical === "top") {
-      baselineY = anchorY - offsetY + metrics.ascent
-    } else if (vertical === "bottom") {
-      baselineY = anchorY - offsetY - metrics.descent
-    }
+    let cumulativeY = -totalBlockHeight * 0.5
+    for (const layout of lineLayouts) {
+      context.font = `${normalizedFontWeight} ${layout.lineFontSize}px ${fontFamily}`
 
-    for (const glyph of glyphLayout) {
-      context.fillText(glyph.char, startX + glyph.x, baselineY)
+      let startX = anchorX + offsetX - (layout.visualLeft + layout.visualRight) * 0.5
+      if (horizontal === "left") {
+        startX = anchorX + offsetX - layout.visualLeft
+      } else if (horizontal === "right") {
+        startX = anchorX + offsetX - layout.visualRight
+      }
+
+      let baselineY =
+        anchorY - offsetY + cumulativeY +
+        (layout.metrics.ascent - layout.metrics.descent) * 0.5
+      if (vertical === "top") {
+        baselineY = anchorY - offsetY + cumulativeY + layout.metrics.ascent
+      } else if (vertical === "bottom") {
+        baselineY = anchorY - offsetY + cumulativeY - layout.metrics.descent
+      }
+
+      for (const glyph of layout.glyphs) {
+        context.fillText(glyph.char, startX + glyph.x, baselineY)
+      }
+
+      cumulativeY += layout.lineFontSize * lineHeight
     }
 
     if (!this.textTexture) {
