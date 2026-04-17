@@ -1,6 +1,6 @@
 {
   "name": "@resciencelab/shader-cli",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Agent-native CLI for Shader Lab — compose and export WebGPU shader scenes from the terminal",
   "type": "module",
   "bin": {

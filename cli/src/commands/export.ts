@@ -14,6 +14,12 @@ function resolveRuntime(program: Command): string {
     ?? DEFAULT_RUNTIME
 }
 
+function buildRuntimeUrl(baseUrl: string, projectJson: string): string {
+  const encoded = Buffer.from(projectJson).toString("base64")
+  const sep = baseUrl.includes("?") ? "&" : "?"
+  return `${baseUrl}${sep}project=${encodeURIComponent(encoded)}&autoplay=true`
+}
+
 async function loadPlaywright() {
   try {
     return await import("playwright")
@@ -48,77 +54,48 @@ async function renderWithPlaywright(
   const sp2 = new Spinner("Launching Chrome (WebGPU)").spin()
   const browser = await pw.chromium.launch({
     headless: false,
+    channel: "chrome",
     args: [
       "--enable-unsafe-webgpu",
       "--enable-features=Vulkan",
       "--use-angle=metal",
-      "--window-position=-2400,-2400",
-      "--window-size=1,1",
     ],
   })
   sp2.succeed("Chrome ready")
 
   try {
-    const context = await browser.newContext({ acceptDownloads: true })
+    const context = await browser.newContext({
+      acceptDownloads: true,
+      viewport: { width: 1920, height: 1080 },
+    })
     const page = await context.newPage()
-
-    let hostname: string
-    try { hostname = new URL(runtimeUrl).hostname } catch { hostname = runtimeUrl }
-    const sp3 = new Spinner(`Loading ${hostname}`).spin()
-    await page.goto(runtimeUrl, { waitUntil: "networkidle" })
-    await page.waitForTimeout(3000)
-    sp3.succeed("Runtime loaded")
 
     const project = JSON.parse(projectJson)
     const layerCount = project.layers?.length ?? 0
-    const sp4 = new Spinner(`Injecting project (${layerCount} layers, ${opts.duration}s)`).spin()
-    await page.evaluate((json: string) => {
-      const projectFile = JSON.parse(json)
-      const { useLayerStore, useTimelineStore, useEditorStore } = (window as any).__SHADER_LAB_STORES__ ?? {}
-      if (useLayerStore) {
-        useLayerStore.getState().replaceState(
-          projectFile.layers,
-          projectFile.selectedLayerId,
-          null
-        )
-      }
-      if (useTimelineStore) {
-        useTimelineStore.getState().replaceState({
-          currentTime: 0,
-          duration: projectFile.timeline.duration,
-          isPlaying: true,
-          loop: projectFile.timeline.loop,
-          selectedKeyframeId: null,
-          selectedTrackId: null,
-          tracks: projectFile.timeline.tracks,
-        })
-      }
-      if (useEditorStore && projectFile.sceneConfig) {
-        useEditorStore.getState().updateSceneConfig(projectFile.sceneConfig)
-        useEditorStore.getState().setOutputSize(
-          projectFile.composition.width,
-          projectFile.composition.height
-        )
-      }
-    }, projectJson)
-    await page.waitForTimeout(2000)
-    sp4.succeed("Project injected")
+
+    let hostname: string
+    try { hostname = new URL(runtimeUrl).hostname } catch { hostname = runtimeUrl }
+    const sp3 = new Spinner(`Loading ${hostname} (${layerCount} layers)`).spin()
+    const fullUrl = buildRuntimeUrl(runtimeUrl, projectJson)
+    await page.goto(fullUrl, { waitUntil: "networkidle" })
+    // Wait for URL params loader to apply project (1.5s delay in component + render time)
+    await page.waitForTimeout(5000)
+    sp3.succeed("Runtime loaded & project injected")
 
     if (opts.format === "png") {
       const sp5 = new Spinner("Exporting PNG").spin()
+
+      // Open export dialog using Playwright locator
+      await page.locator('button[aria-label="Export"]').first().click()
+      await page.waitForTimeout(1500)
+
       const downloadPromise = page.waitForEvent("download", { timeout: 30000 })
-      await page.evaluate((_time: number) => {
-        const exportBtn = document.querySelector('button[aria-label="Export"]') as HTMLButtonElement
-        exportBtn?.click()
-        setTimeout(() => {
-          const imgTab = [...document.querySelectorAll("button")].find(b => b.textContent?.trim() === "image")
-          imgTab?.click()
-          setTimeout(() => {
-            const exportPng = [...document.querySelectorAll("button")].find(b => b.textContent?.includes("Export PNG"))
-            exportPng?.click()
-          }, 500)
-        }, 1000)
-      }, opts.time)
+      // Click image tab (default, but ensure)
+      await page.getByRole("button", { name: "image", exact: true }).click()
+      await page.waitForTimeout(500)
+      // Click Export PNG
+      await page.getByRole("button", { name: "Export PNG" }).click()
+
       const download = await downloadPromise
       sp5.succeed("PNG captured")
 
@@ -131,27 +108,21 @@ async function renderWithPlaywright(
       const pb = new ProgressBar(`Recording ${formatLabel}`, expectedMs)
       const spRec = new Spinner(`Recording ${formatLabel} (${opts.duration}s @ ${opts.fps}fps)`).spin()
 
+      // Open export dialog
+      await page.locator('button[aria-label="Export"]').first().click()
+      await page.waitForTimeout(1500)
+
       const downloadPromise = page.waitForEvent("download", { timeout: 120000 })
-      await page.evaluate((format: string) => {
-        const exportBtn = document.querySelector('button[aria-label="Export"]') as HTMLButtonElement
-        exportBtn?.click()
-        setTimeout(() => {
-          const videoTab = [...document.querySelectorAll("button")].find(b => b.textContent?.trim() === "video")
-          videoTab?.click()
-          setTimeout(() => {
-            if (format === "mp4") {
-              const mp4Btn = [...document.querySelectorAll("button")].find(b => b.textContent?.trim() === "MP4")
-              mp4Btn?.click()
-            }
-            setTimeout(() => {
-              const btn = [...document.querySelectorAll("button")].find(
-                b => b.textContent?.includes("Export WEBM") || b.textContent?.includes("Export MP4")
-              )
-              btn?.click()
-            }, 500)
-          }, 500)
-        }, 1000)
-      }, opts.format)
+      // Click video tab
+      await page.getByRole("button", { name: "video", exact: true }).click()
+      await page.waitForTimeout(500)
+      // Select format if MP4
+      if (opts.format === "mp4") {
+        await page.getByRole("button", { name: "MP4", exact: true }).click()
+        await page.waitForTimeout(300)
+      }
+      // Click Export WEBM / Export MP4
+      await page.getByRole("button", { name: `Export ${formatLabel}` }).click()
 
       const recStart = Date.now()
       const tick = setInterval(() => pb.update(Date.now() - recStart), 200)
