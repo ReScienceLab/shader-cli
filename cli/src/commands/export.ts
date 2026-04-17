@@ -1,6 +1,7 @@
 import type { Command } from "commander"
 import type { Session } from "../core/session.js"
 import { success, error } from "../utils/output.js"
+import { Spinner, ProgressBar } from "../utils/spinner.js"
 import * as path from "node:path"
 import * as fs from "node:fs"
 
@@ -37,11 +38,14 @@ async function renderWithPlaywright(
     time: number
   }
 ): Promise<string> {
+  const sp1 = new Spinner("Starting Playwright").spin()
   const pw = await loadPlaywright()
+  sp1.succeed("Playwright ready")
 
   const downloadDir = path.dirname(path.resolve(opts.outputPath))
   fs.mkdirSync(downloadDir, { recursive: true })
 
+  const sp2 = new Spinner("Launching Chrome (WebGPU)").spin()
   const browser = await pw.chromium.launch({
     headless: false,
     args: [
@@ -52,15 +56,22 @@ async function renderWithPlaywright(
       "--window-size=1,1",
     ],
   })
+  sp2.succeed("Chrome ready")
 
   try {
     const context = await browser.newContext({ acceptDownloads: true })
     const page = await context.newPage()
 
-    console.log(`  Loading runtime: ${runtimeUrl}`)
+    let hostname: string
+    try { hostname = new URL(runtimeUrl).hostname } catch { hostname = runtimeUrl }
+    const sp3 = new Spinner(`Loading ${hostname}`).spin()
     await page.goto(runtimeUrl, { waitUntil: "networkidle" })
     await page.waitForTimeout(3000)
+    sp3.succeed("Runtime loaded")
 
+    const project = JSON.parse(projectJson)
+    const layerCount = project.layers?.length ?? 0
+    const sp4 = new Spinner(`Injecting project (${layerCount} layers, ${opts.duration}s)`).spin()
     await page.evaluate((json: string) => {
       const projectFile = JSON.parse(json)
       const { useLayerStore, useTimelineStore, useEditorStore } = (window as any).__SHADER_LAB_STORES__ ?? {}
@@ -90,10 +101,11 @@ async function renderWithPlaywright(
         )
       }
     }, projectJson)
-
     await page.waitForTimeout(2000)
+    sp4.succeed("Project injected")
 
     if (opts.format === "png") {
+      const sp5 = new Spinner("Exporting PNG").spin()
       const downloadPromise = page.waitForEvent("download", { timeout: 30000 })
       await page.evaluate((_time: number) => {
         const exportBtn = document.querySelector('button[aria-label="Export"]') as HTMLButtonElement
@@ -108,8 +120,17 @@ async function renderWithPlaywright(
         }, 1000)
       }, opts.time)
       const download = await downloadPromise
+      sp5.succeed("PNG captured")
+
+      const sp6 = new Spinner(`Saving to ${path.basename(opts.outputPath)}`).spin()
       await download.saveAs(opts.outputPath)
+      sp6.succeed(`Saved ${path.basename(opts.outputPath)}`)
     } else {
+      const formatLabel = opts.format.toUpperCase()
+      const expectedMs = opts.duration * 1000 * 2
+      const pb = new ProgressBar(`Recording ${formatLabel}`, expectedMs)
+      const spRec = new Spinner(`Recording ${formatLabel} (${opts.duration}s @ ${opts.fps}fps)`).spin()
+
       const downloadPromise = page.waitForEvent("download", { timeout: 120000 })
       await page.evaluate((format: string) => {
         const exportBtn = document.querySelector('button[aria-label="Export"]') as HTMLButtonElement
@@ -131,8 +152,17 @@ async function renderWithPlaywright(
           }, 500)
         }, 1000)
       }, opts.format)
+
+      const recStart = Date.now()
+      const tick = setInterval(() => pb.update(Date.now() - recStart), 200)
       const download = await downloadPromise
+      clearInterval(tick)
+      pb.done()
+      spRec.succeed(`Recording complete`)
+
+      const sp6 = new Spinner(`Saving to ${path.basename(opts.outputPath)}`).spin()
       await download.saveAs(opts.outputPath)
+      sp6.succeed(`Saved ${path.basename(opts.outputPath)}`)
     }
 
     return opts.outputPath
@@ -156,8 +186,6 @@ export function registerExportCommands(program: Command, session: Session): void
         const project = session.getProject()
         if (opts.duration) project.timeline.duration = parseFloat(opts.duration)
         const runtimeUrl = resolveRuntime(program)
-
-        console.log(`  Exporting ${opts.format.toUpperCase()} video...`)
         const projectJson = JSON.stringify(project)
         const outputPath = await renderWithPlaywright(projectJson, runtimeUrl, {
           format: opts.format,
@@ -185,7 +213,6 @@ export function registerExportCommands(program: Command, session: Session): void
       try {
         const project = session.getProject()
         const runtimeUrl = resolveRuntime(program)
-        console.log("  Exporting PNG...")
         const projectJson = JSON.stringify(project)
         const outputPath = await renderWithPlaywright(projectJson, runtimeUrl, {
           format: "png",
