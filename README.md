@@ -14,19 +14,18 @@
 <summary>CLI commands used to generate the above</summary>
 
 ```bash
-cd cli
-bun run src/index.ts -- project new -o scene.lab
-bun run src/index.ts -- --project scene.lab layer add crt \
+shader-cli project new -o scene.lab
+shader-cli --project scene.lab layer add crt \
   -p crtMode=composite-tv -p cellSize=4 -p scanlineIntensity=0.3 \
   -p flickerIntensity=0.15 -p glitchIntensity=0.2 -p glitchSpeed=3 \
   -p bloomEnabled=true -p bloomIntensity=1.5 -p barrelDistortion=0.1 \
   -p vignetteIntensity=0.6
-bun run src/index.ts -- --project scene.lab layer add text \
+shader-cli --project scene.lab layer add text \
   -p "text=ReScience Lab" -p fontSize=190 -p fontWeight=800 -p "textColor=#e0e0e0"
-bun run src/index.ts -- --project scene.lab layer add gradient \
+shader-cli --project scene.lab layer add gradient \
   -p preset=sunset -p animate=true -p motionAmount=0.5 -p tonemapMode=cinematic
-bun run src/index.ts -- --project scene.lab timeline duration 6
-bun run src/index.ts -- --project scene.lab export video -o output.webm
+shader-cli --project scene.lab timeline duration 6
+shader-cli --project scene.lab export video -o output.webm
 ```
 </details>
 
@@ -36,22 +35,34 @@ This is a fork of [basement.studio's Shader Lab](https://github.com/basementstud
 
 ## Quick Start
 
+### Install via npm (recommended)
+
+```bash
+# Install globally
+npm i -g @resciencelab/shader-cli
+
+# One-time setup for video export (installs Playwright + Chromium)
+shader-cli setup
+
+# Create a CRT text animation
+shader-cli preset apply crt-text --text "Hello World" -o scene.lab
+shader-cli --project scene.lab export video -o output.webm
+```
+
+Or use with `npx` (no install):
+
+```bash
+npx @resciencelab/shader-cli preset apply crt-text --text "Hello" -o scene.lab
+```
+
+### Install from source
+
 ```bash
 git clone https://github.com/ReScienceLab/shader-cli.git
-cd shader-cli
-
-# Install editor + CLI dependencies
-bun install
-cd cli && bun install && cd ..
-
-# Start the editor (needed for export)
-bun run dev &
-
-# Create a CRT text animation in one command
-cd cli
-bun run src/index.ts -- preset apply crt-text --text "Hello World" -o scene.lab
-bun run src/index.ts -- --project scene.lab export video -o output.webm
+cd shader-cli/cli && npm install && npm run build && npm link
 ```
+
+**Runtime:** Export commands use [shader-lab.rescience.dev](https://shader-lab.rescience.dev/tools/shader-lab) by default. Override with `--runtime http://localhost:3000` for local development.
 
 ## CLI Commands
 
@@ -93,7 +104,7 @@ shader-cli timeline keyframe add <layer> <time> <property> <value> [-i smooth]
 shader-cli timeline info
 ```
 
-### Export (requires Chrome + WebGPU)
+### Export (requires Playwright + Chrome with WebGPU)
 ```bash
 shader-cli export video [-o out.webm] [--format webm|mp4] [--quality standard] [--fps 30]
 shader-cli export image [-o out.png] [--quality standard] [--time 0]
@@ -104,6 +115,11 @@ shader-cli export project [-o out.lab]
 ```bash
 shader-cli preset list
 shader-cli preset apply <name> [--text "Text"] [-o out.lab]
+```
+
+### Setup
+```bash
+shader-cli setup    # Install Playwright + Chromium for video export
 ```
 
 ## Built-in Presets
@@ -127,25 +143,25 @@ shader-cli preset apply <name> [--text "Text"] [-o out.lab]
 
 ### Build from scratch
 ```bash
-bun run src/index.ts -- project new -o my.lab
-bun run src/index.ts -- --project my.lab layer add gradient -p preset=neon-glow -p animate=true
-bun run src/index.ts -- --project my.lab layer add text -p "text=ReScience Lab" -p fontSize=201
-bun run src/index.ts -- --project my.lab layer add dithering -p algorithm=bayer-4x4
-bun run src/index.ts -- --project my.lab layer add crt -p bloomEnabled=true
-bun run src/index.ts -- --project my.lab export video -o output.webm
+shader-cli project new -o my.lab
+shader-cli --project my.lab layer add gradient -p preset=neon-glow -p animate=true
+shader-cli --project my.lab layer add text -p "text=ReScience Lab" -p fontSize=201
+shader-cli --project my.lab layer add dithering -p algorithm=bayer-4x4
+shader-cli --project my.lab layer add crt -p bloomEnabled=true
+shader-cli --project my.lab export video -o output.webm
 ```
 
 ### Agent JSON mode
 ```bash
-bun run src/index.ts -- --json layer types
-bun run src/index.ts -- --json layer params crt
-bun run src/index.ts -- --json --project my.lab layer set 2 -p bloomIntensity=3.0
-bun run src/index.ts -- --json --project my.lab project info
+shader-cli --json layer types
+shader-cli --json layer params crt
+shader-cli --json --project my.lab layer set 2 -p bloomIntensity=3.0
+shader-cli --json --project my.lab project info
 ```
 
 ### REPL mode
 ```bash
-bun run src/index.ts
+shader-cli
 # Enters interactive shell with undo/redo support
 ```
 
@@ -173,9 +189,17 @@ shader-cli/
 
 ## Requirements
 
-- [Bun](https://bun.sh/) >= 1.3
-- Chrome/Chromium with WebGPU support (for export)
-- [Playwright](https://playwright.dev/) (for headless export)
+- [Node.js](https://nodejs.org/) >= 18
+- Chrome/Chromium with WebGPU support (for export — installed automatically via `shader-cli setup`)
+
+## Runtime
+
+Export commands render via a hosted Shader Lab instance at [shader-lab.rescience.dev](https://shader-lab.rescience.dev/tools/shader-lab). No local server needed.
+
+To use a local instance instead:
+```bash
+shader-cli --runtime http://localhost:3000/tools/shader-lab --project scene.lab export video -o out.webm
+```
 
 ## Credits
 

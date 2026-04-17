@@ -1,36 +1,33 @@
 import type { Command } from "commander"
 import type { Session } from "../core/session.js"
-import { saveProject } from "../core/project-engine.js"
 import { success, error } from "../utils/output.js"
 import * as path from "node:path"
 import * as fs from "node:fs"
-import { spawn, execSync } from "node:child_process"
 
-const SHADER_LAB_ROOT = path.resolve(import.meta.dirname ?? __dirname, "..", "..")
+const DEFAULT_RUNTIME = "https://shader-lab.rescience.dev/tools/shader-lab"
 
-async function waitForServer(url: string, timeoutMs = 15000): Promise<boolean> {
-  const start = Date.now()
-  while (Date.now() - start < timeoutMs) {
-    try {
-      const res = await fetch(url)
-      if (res.ok) return true
-    } catch { /* not ready */ }
-    await new Promise(r => setTimeout(r, 500))
-  }
-  return false
+function resolveRuntime(program: Command): string {
+  const opts = program.opts()
+  return opts.runtime
+    ?? process.env.SHADER_LAB_RUNTIME_URL
+    ?? DEFAULT_RUNTIME
 }
 
-function findDevServer(): boolean {
+async function loadPlaywright() {
   try {
-    const res = execSync("curl -s -o /dev/null -w '%{http_code}' http://localhost:3000", { timeout: 3000 })
-    return res.toString().trim() === "200"
+    return await import("playwright")
   } catch {
-    return false
+    throw new Error(
+      "Playwright is required for export but not installed.\n" +
+      "Run: shader-cli setup\n" +
+      "Or:  npm install playwright && npx playwright install chromium"
+    )
   }
 }
 
 async function renderWithPlaywright(
   projectJson: string,
+  runtimeUrl: string,
   opts: {
     format: "webm" | "mp4" | "png"
     outputPath: string
@@ -40,29 +37,7 @@ async function renderWithPlaywright(
     time: number
   }
 ): Promise<string> {
-  let pw: typeof import("playwright")
-  try {
-    pw = await import("playwright")
-  } catch {
-    throw new Error("Playwright is required for export. Install with: bun add playwright && bunx playwright install chromium")
-  }
-
-  let serverProcess: ReturnType<typeof spawn> | null = null
-  const serverRunning = findDevServer()
-
-  if (!serverRunning) {
-    console.log("  Starting dev server...")
-    serverProcess = spawn("bun", ["run", "dev"], {
-      cwd: SHADER_LAB_ROOT,
-      stdio: "ignore",
-      detached: true,
-    })
-    const ready = await waitForServer("http://localhost:3000", 20000)
-    if (!ready) {
-      serverProcess?.kill()
-      throw new Error("Dev server failed to start. Run 'bun run dev' manually in the shader-lab directory.")
-    }
-  }
+  const pw = await loadPlaywright()
 
   const downloadDir = path.dirname(path.resolve(opts.outputPath))
   fs.mkdirSync(downloadDir, { recursive: true })
@@ -82,7 +57,8 @@ async function renderWithPlaywright(
     const context = await browser.newContext({ acceptDownloads: true })
     const page = await context.newPage()
 
-    await page.goto("http://localhost:3000/tools/shader-lab", { waitUntil: "networkidle" })
+    console.log(`  Loading runtime: ${runtimeUrl}`)
+    await page.goto(runtimeUrl, { waitUntil: "networkidle" })
     await page.waitForTimeout(3000)
 
     await page.evaluate((json: string) => {
@@ -119,7 +95,7 @@ async function renderWithPlaywright(
 
     if (opts.format === "png") {
       const downloadPromise = page.waitForEvent("download", { timeout: 30000 })
-      await page.evaluate((time: number) => {
+      await page.evaluate((_time: number) => {
         const exportBtn = document.querySelector('button[aria-label="Export"]') as HTMLButtonElement
         exportBtn?.click()
         setTimeout(() => {
@@ -147,10 +123,10 @@ async function renderWithPlaywright(
               mp4Btn?.click()
             }
             setTimeout(() => {
-              const exportBtn = [...document.querySelectorAll("button")].find(
+              const btn = [...document.querySelectorAll("button")].find(
                 b => b.textContent?.includes("Export WEBM") || b.textContent?.includes("Export MP4")
               )
-              exportBtn?.click()
+              btn?.click()
             }, 500)
           }, 500)
         }, 1000)
@@ -162,14 +138,11 @@ async function renderWithPlaywright(
     return opts.outputPath
   } finally {
     await browser.close()
-    if (serverProcess) {
-      try { process.kill(-serverProcess.pid!, "SIGTERM") } catch { /* ignore */ }
-    }
   }
 }
 
 export function registerExportCommands(program: Command, session: Session): void {
-  const exp = program.command("export").description("Export project (requires Chrome + WebGPU)")
+  const exp = program.command("export").description("Export project (requires Playwright + Chrome with WebGPU)")
 
   exp.command("video")
     .description("Export video (WebM or MP4)")
@@ -182,13 +155,11 @@ export function registerExportCommands(program: Command, session: Session): void
       try {
         const project = session.getProject()
         if (opts.duration) project.timeline.duration = parseFloat(opts.duration)
-
-        const tmpPath = path.join(SHADER_LAB_ROOT, ".cli-export-temp.lab")
-        saveProject(project, tmpPath)
+        const runtimeUrl = resolveRuntime(program)
 
         console.log(`  Exporting ${opts.format.toUpperCase()} video...`)
         const projectJson = JSON.stringify(project)
-        const outputPath = await renderWithPlaywright(projectJson, {
+        const outputPath = await renderWithPlaywright(projectJson, runtimeUrl, {
           format: opts.format,
           outputPath: path.resolve(opts.output),
           quality: opts.quality,
@@ -196,8 +167,6 @@ export function registerExportCommands(program: Command, session: Session): void
           duration: project.timeline.duration,
           time: 0,
         })
-
-        try { fs.unlinkSync(tmpPath) } catch { /* ignore */ }
 
         const stat = fs.statSync(outputPath)
         const sizeMB = (stat.size / 1024 / 1024).toFixed(1)
@@ -215,9 +184,10 @@ export function registerExportCommands(program: Command, session: Session): void
     .action(async (opts) => {
       try {
         const project = session.getProject()
+        const runtimeUrl = resolveRuntime(program)
         console.log("  Exporting PNG...")
         const projectJson = JSON.stringify(project)
-        const outputPath = await renderWithPlaywright(projectJson, {
+        const outputPath = await renderWithPlaywright(projectJson, runtimeUrl, {
           format: "png",
           outputPath: path.resolve(opts.output),
           quality: opts.quality,

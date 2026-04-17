@@ -1,18 +1,45 @@
 {
-  "name": "@shader-lab/cli",
+  "name": "@resciencelab/shader-cli",
   "version": "0.1.0",
-  "description": "CLI harness for Shader Lab — agent-native shader composition",
+  "description": "Agent-native CLI for Shader Lab — compose and export WebGPU shader scenes from the terminal",
   "type": "module",
   "bin": {
-    "shader-lab": "./dist/index.js"
+    "shader-cli": "./dist/index.js"
   },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ReScienceLab/shader-cli.git",
+    "directory": "cli"
+  },
+  "homepage": "https://github.com/ReScienceLab/shader-cli#readme",
+  "license": "MIT",
+  "keywords": [
+    "shader",
+    "webgpu",
+    "cli",
+    "agent",
+    "shader-lab",
+    "video-export",
+    "glsl",
+    "post-processing"
+  ],
   "scripts": {
-    "build": "bun build src/index.ts --outdir dist --target node --format esm",
-    "dev": "bun run src/index.ts",
-    "test": "bun test"
+    "build": "tsc -p tsconfig.json && node scripts/postbuild.js",
+    "prepublishOnly": "npm run build",
+    "dev": "bun run src/index.ts"
   },
   "dependencies": {
-    "commander": "^13.1.0",
+    "commander": "^13.1.0"
+  },
+  "optionalDependencies": {
     "playwright": "^1.52.0"
   },
   "devDependencies": {

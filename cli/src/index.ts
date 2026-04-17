@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { Command } from "commander"
 import { Session } from "./core/session.js"
 import { openProject } from "./core/project-engine.js"
@@ -8,16 +9,18 @@ import { registerSceneCommands } from "./commands/scene.js"
 import { registerTimelineCommands } from "./commands/timeline.js"
 import { registerExportCommands } from "./commands/export.js"
 import { registerPresetCommands } from "./commands/preset.js"
+import { registerSetupCommand } from "./commands/setup.js"
 import { startRepl } from "./utils/repl.js"
 
 const session = new Session()
 
 const program = new Command()
-  .name("shader-lab")
-  .description("CLI harness for Shader Lab — agent-native shader composition")
+  .name("shader-cli")
+  .description("Agent-native CLI for Shader Lab — compose and export WebGPU shader scenes from the terminal")
   .version("0.1.0")
   .option("--json", "Output as JSON (agent-friendly)")
   .option("--project <path>", "Open a .lab project file")
+  .option("--runtime <url>", "Shader Lab runtime URL (default: https://shader-lab.rescience.dev/tools/shader-lab)")
   .hook("preAction", (thisCommand) => {
     const opts = thisCommand.opts()
     if (opts.json) setJsonMode(true)
@@ -32,6 +35,7 @@ registerSceneCommands(program, session)
 registerTimelineCommands(program, session)
 registerExportCommands(program, session)
 registerPresetCommands(program, session)
+registerSetupCommand(program)
 
 const isRepl = process.argv.length <= 2 ||
   (process.argv.length === 3 && (process.argv[2] === "--json" || process.argv[2] === "--help"))
