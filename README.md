@@ -3,28 +3,30 @@
 > Agent-native CLI for [Shader Lab](https://github.com/basementstudio/shader-lab) — create, stack, and export WebGPU shader compositions from the terminal.
 
 <p align="center">
-  <img src="public/demos/v3-ascii-art-hero.gif" alt="shader-cli ASCII art demo" width="800" />
+  <img src="public/demos/vhs-composite-hero.gif" alt="ReScience Lab VHS composite demo" width="800" />
 </p>
 
 <p align="center">
-  <em>ASCII art shader composition — generated entirely from the CLI</em>
-</p>
-
-<p align="center">
-  <img src="public/demos/rescience-lab-blue.gif" alt="ReScience Lab CRT demo" width="800" />
-</p>
-
-<p align="center">
-  <em>CRT + Dithering + Pattern composition with custom text color (#0047ab)</em>
+  <em>"ReScience Lab" — VHS Composite TV effect, generated entirely from the CLI</em>
 </p>
 
 <details>
 <summary>CLI commands used to generate the above</summary>
 
 ```bash
-bun run src/index.ts -- preset apply crt-text --text "ReScience Lab" -o scene.lab
-bun run src/index.ts -- --project scene.lab layer set 2 -p "textColor=#0047ab"
-bun run src/index.ts -- --project scene.lab export video -o ReScience-Lab-blue.webm
+cd cli
+bun run src/index.ts -- project new -o scene.lab
+bun run src/index.ts -- --project scene.lab layer add crt \
+  -p crtMode=composite-tv -p cellSize=4 -p scanlineIntensity=0.3 \
+  -p flickerIntensity=0.15 -p glitchIntensity=0.2 -p glitchSpeed=3 \
+  -p bloomEnabled=true -p bloomIntensity=1.5 -p barrelDistortion=0.1 \
+  -p vignetteIntensity=0.6
+bun run src/index.ts -- --project scene.lab layer add text \
+  -p "text=ReScience Lab" -p fontSize=190 -p fontWeight=800 -p "textColor=#e0e0e0"
+bun run src/index.ts -- --project scene.lab layer add gradient \
+  -p preset=sunset -p animate=true -p motionAmount=0.5 -p tonemapMode=cinematic
+bun run src/index.ts -- --project scene.lab timeline duration 6
+bun run src/index.ts -- --project scene.lab export video -o output.webm
 ```
 </details>
 

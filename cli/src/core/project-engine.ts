@@ -144,16 +144,19 @@ export function addLayer(
     params[k] = v
   }
 
+  const isTextMask = type === "text"
   const layer: EditorLayer = {
     assetId: null,
     blendMode: "normal",
-    compositeMode: def.kind === "source" ? "filter" : "filter",
+    compositeMode: isTextMask ? "mask" : "filter",
     expanded: true,
     hue: 0,
     id: uid(),
     kind: def.kind,
     locked: false,
-    maskConfig: { ...DEFAULT_MASK_CONFIG },
+    maskConfig: isTextMask
+      ? { invert: false, mode: "stencil" as const, source: "luminance" as const }
+      : { ...DEFAULT_MASK_CONFIG },
     name: options.name ?? def.defaultName,
     opacity: 1,
     params,

@@ -68,14 +68,13 @@ async function renderWithPlaywright(
   fs.mkdirSync(downloadDir, { recursive: true })
 
   const browser = await pw.chromium.launch({
-    headless: true,
+    headless: false,
     args: [
-      "--no-sandbox",
       "--enable-unsafe-webgpu",
       "--enable-features=Vulkan",
       "--use-angle=metal",
-      "--enable-gpu",
-      "--ignore-gpu-blocklist",
+      "--window-position=-2400,-2400",
+      "--window-size=1,1",
     ],
   })
 
