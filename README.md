@@ -3,11 +3,11 @@
 > Agent-native CLI for [Shader Lab](https://github.com/basementstudio/shader-lab) — create, stack, and export WebGPU shader compositions from the terminal.
 
 <p align="center">
-  <img src="public/demos/vhs-composite-hero.gif" alt="ReScience Lab VHS composite demo" width="800" />
+  <video src="https://github.com/ReScienceLab/shader-cli/raw/main/public/demos/rescience-lab-hero.webm" autoplay loop muted playsinline width="800"></video>
 </p>
 
 <p align="center">
-  <em>"ReScience Lab" — VHS Composite TV effect, generated entirely from the CLI</em>
+  <em>"ReScience Lab" + "npm i -g @resciencelab/shader-cli" — CRT Composite TV effect, generated entirely from the CLI</em>
 </p>
 
 <details>
